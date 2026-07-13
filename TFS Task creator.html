@@ -556,6 +556,15 @@ body.light .th-vert.d-ana  .th-vert-inner{color:#92400e;}
 }
 .tc-cb:hover{transform:scale(1.12);}
 .tc.on .tc-cb{filter:drop-shadow(0 0 4px var(--acc-glow));}
+/* ── CELL STATES: not-applicable (gated by req tags) & already-exists ── */
+.tc.tc-na{cursor:default;background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--glass2) 5px,var(--glass2) 10px) !important;}
+.tc.tc-na:hover{background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--glass2) 5px,var(--glass2) 10px) !important;}
+.tc-na-dash{color:var(--td);font-size:.7rem;opacity:.5;}
+.tc.tc-exists{cursor:not-allowed;background:rgba(16,185,129,.06) !important;}
+.tc.tc-exists:hover{background:rgba(16,185,129,.08) !important;}
+.tc.tc-exists .tc-cb{opacity:.45;cursor:not-allowed;}
+.tc-exists-badge{display:block;font-size:.5rem;color:#34d399;font-weight:700;margin-top:3px;white-space:nowrap;letter-spacing:.02em;}
+body.light .tc.tc-exists{background:rgba(5,150,105,.07) !important;}
 .tc-fields{display:none;width:100%;margin-top:4px;}
 .tc.on .tc-fields{display:flex;flex-direction:column;gap:3px;}
 .mini-inp{
@@ -1054,6 +1063,16 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
         <div class="si-wrap" style="max-width:220px;">
           <input type="text" id="reqSearch" placeholder="Search requirements…" oninput="filterReqs()"/>
         </div>
+        <div class="fp-multiselect" id="delivMs" style="min-width:170px;">
+          <button type="button" class="fp-multiselect-btn" id="delivMsBtn" onclick="toggleDelivDrop(event)">All Deliverable Types</button>
+          <div class="fp-multiselect-dropdown" id="delivMsDrop">
+            <label class="fp-multiselect-item select-all"><input type="checkbox" id="delivAll" checked onchange="toggleAllDeliv(this.checked)" style="accent-color:var(--acc);"> Select All</label>
+            <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Deliverable" checked onchange="onDelivChange()" style="accent-color:var(--acc);"> Deliverable</label>
+            <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Non-Deliverable" checked onchange="onDelivChange()" style="accent-color:var(--acc);"> Non-Deliverable</label>
+            <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Deliverables Adhoc" checked onchange="onDelivChange()" style="accent-color:var(--acc);"> Adhoc</label>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="reqRefreshBtn" onclick="refreshRequirements()" title="Re-fetch the latest requirements for the current Sprint / Area / filter">🔄 Refresh</button>
         <div style="margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
           <span class="summary-stat">Reqs: <strong id="smReqs">0</strong></span>
           <span class="summary-stat">Tasks to create: <strong id="smTasks">0</strong></span>
@@ -1061,6 +1080,9 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
             ⚡ Generate All Tasks
           </button>
         </div>
+      </div>
+      <div style="font-size:.6rem;color:var(--tm);margin:-4px 2px 10px;">
+        Cells are gated by the requirement's tags &middot; <span style="color:#34d399;font-weight:700;">✓ exists</span> = a task of this type already exists (open) in this sprint &mdash; disabled &middot; <span style="color:var(--td);">▨</span> hatched = not applicable for this requirement
       </div>
       <div class="excel-wrap">
         <table class="excel-tbl" id="excelTbl">
@@ -1376,6 +1398,39 @@ let allIterations=[], allAreas=[], memberList=[];
 let requirements=[], filteredReqs=[];
 // reqData[reqId] = { sel: Set<ttIdx>, at:{ttIdx:str}, oe:{}, rw:{}, cw:{} }
 let reqData={};
+let reqMap={};              // reqId -> requirement object (for quick lookups)
+let existingTaskTypes={};   // reqId -> Set(ttIdx) of task types already created (open) this sprint
+const _EMPTY_SET=new Set();
+
+/* Shared WIQL path escaper. */
+function wiqlEscPath(s){return String(s||'').replace(/^\\/,'').replace(/\\Iteration\\/i,'\\').replace(/\\Area\\/i,'\\').replace(/'/g,"''");}
+
+/* A requirement counts as "Regression" only when it carries the exact tag 'Regression'. */
+function isRegressionReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.trim().toLowerCase()==='regression');}
+
+/* Map an existing task's title to a TASK_TYPES index by longest matching prefix.
+   Titles follow "{Type} - {Requirement|Person}", so the leading type name identifies it. */
+function detectTaskType(title){
+    const t=String(title||'').trim().toLowerCase();
+    let best=-1,bestLen=-1;
+    TASK_TYPES.forEach((tt,i)=>{
+        const nm=String(tt.name).replace(/[-\s]+$/,'').trim().toLowerCase();
+        if(nm&&t.startsWith(nm)&&nm.length>bestLen){best=i;bestLen=nm.length;}
+    });
+    return best;
+}
+
+/* Whether a requirement×task-type cell can be selected for creation.
+   false → the type doesn't match the req's regression state (blank cell),
+           or a task of that type already exists (open) this sprint (disabled cell). */
+function isCellSelectable(r,i){
+    if(!r) return false;
+    const tt=TASK_TYPES[i];
+    const eligible=isRegressionReq(r)?!!tt.regression:!tt.regression;
+    if(!eligible) return false;
+    if((existingTaskTypes[r.id]||_EMPTY_SET).has(i)) return false;
+    return true;
+}
 
 /* ═══════════════════════════
    THEME
@@ -1546,7 +1601,8 @@ function selectIter(path){selectedIter=path;}
 /* ═══════════════════════════
    LOAD REQUIREMENTS
 ═══════════════════════════ */
-async function loadRequirements(){
+async function loadRequirements(opts){
+    opts=opts||{};
     if(!selectedIter){showToast('❌ Select a sprint first','err');return;}
     const area=document.getElementById('areaSel').value;
     showLoading('Loading requirements…');
@@ -1570,10 +1626,10 @@ async function loadRequirements(){
         }
         const ids=((await wr.json()).workItems||[]).map(w=>w.id);
         if(!ids.length){
-            requirements=[];filteredReqs=[];
+            requirements=[];filteredReqs=[];reqData={};reqMap={};existingTaskTypes={};
             document.getElementById('sprintPanel').style.display='none';
             document.getElementById('reqScreen').style.display='block';
-            renderExcel();showToast('ℹ️ No requirements found','warn');return;
+            applyReqFilters();showToast('ℹ️ No requirements found','warn');return;
         }
         const fields='System.Id,System.Title,System.State,System.IterationPath,System.AreaPath,System.Tags,System.AssignedTo';
         let all=[];
@@ -1588,20 +1644,70 @@ async function loadRequirements(){
             iter:w.fields['System.IterationPath']||'',area:w.fields['System.AreaPath']||'',
             tags:w.fields['System.Tags']||'',url:tfsUrl+'/_workitems/edit/'+w.id
         }));
-        reqData={};
-        requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};});
-        filteredReqs=[...requirements];
+        reqData={};reqMap={};
+        requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};reqMap[r.id]=r;});
         document.getElementById('sprintPanel').style.display='none';
         document.getElementById('reqScreen').style.display='block';
         document.getElementById('reqCountBadge').textContent='— '+requirements.length+' requirement'+(requirements.length!==1?'s':'')+' loaded';
-        renderExcel();
-        document.getElementById('reqScreen').scrollIntoView({behavior:'smooth',block:'start'});
+
+        // Detect tasks already created (open) under this sprint so their cells can be disabled
+        await loadExistingTasks(selectedIter, area, ids);
+
+        applyReqFilters();
+        if(!opts.silent) document.getElementById('reqScreen').scrollIntoView({behavior:'smooth',block:'start'});
         showToast('✅ Loaded '+requirements.length+' requirements');
 
         // Load members from sprint capacity for the selected area
         loadMembersFromCapacity(selectedIter, area);
     }catch(e){showToast('❌ '+e.message,'err');}
     finally{hideLoading();}
+}
+
+/* ═══════════════════════════
+   EXISTING TASKS (for cell disabling)
+   Finds open Tasks (not Closed/Done/Removed) under the selected sprint that are
+   parented to one of the loaded requirements, then maps each back to its
+   requirement + task-type (via title prefix). Populates existingTaskTypes so the
+   matching cells render disabled and can't be re-created.
+═══════════════════════════ */
+async function loadExistingTasks(iterPath, area, reqIds){
+    existingTaskTypes={};
+    if(!iterPath||!currentProject||!reqIds||!reqIds.length) return;
+    try{
+        const iterSafe=wiqlEscPath(iterPath);
+        const areaSafe=area?wiqlEscPath(area):'';
+        let wiql="SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Task' AND [System.IterationPath] UNDER '"+iterSafe+"' AND [System.State] NOT IN ('Closed','Done','Removed','Completed')";
+        if(areaSafe) wiql+=" AND [System.AreaPath] UNDER '"+areaSafe+"'";
+
+        const wr=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/wiql?api-version=5.0',{
+            method:'POST',headers:{...hdrs,'Content-Type':'application/json'},body:JSON.stringify({query:wiql})
+        });
+        if(!wr.ok){ console.warn('[TC] existing-tasks WIQL '+wr.status); return; }
+        const ids=((await wr.json()).workItems||[]).map(w=>w.id);
+        if(!ids.length) return;
+
+        const reqIdSet=new Set(reqIds.map(Number));
+        // $expand=relations returns fields too, so title + parent come from one call.
+        for(let i=0;i<ids.length;i+=200){
+            const batch=ids.slice(i,i+200).join(',');
+            try{
+                const rr=await fetch(tfsUrl+'/_apis/wit/workitems?ids='+batch+'&$expand=relations&api-version=5.0',{headers:hdrs});
+                if(!rr.ok) continue;
+                ((await rr.json()).value||[]).forEach(w=>{
+                    const parentRel=(w.relations||[]).find(rel=>rel.rel==='System.LinkTypes.Hierarchy-Reverse');
+                    if(!parentRel) return;
+                    const parentId=parseInt(parentRel.url.split('/').pop());
+                    if(!reqIdSet.has(parentId)) return;
+                    const ti=detectTaskType((w.fields||{})['System.Title']||'');
+                    if(ti<0) return;
+                    if(!existingTaskTypes[parentId]) existingTaskTypes[parentId]=new Set();
+                    existingTaskTypes[parentId].add(ti);
+                });
+            }catch(e2){ console.warn('[TC] existing-tasks relations error:',e2.message); }
+        }
+        const n=Object.values(existingTaskTypes).reduce((s,set)=>s+set.size,0);
+        if(n) console.log('[TC] existing open tasks mapped:',n,existingTaskTypes);
+    }catch(e){ console.warn('[TC] loadExistingTasks error:',e.message); }
 }
 
 /* ═══════════════════════════
@@ -1631,9 +1737,26 @@ function renderExcel(){
     const memberOpts=memberOptionsHtml('');
 
     tbody.innerHTML=filteredReqs.map((r,idx)=>{
-        // Each task type cell: checkbox + (when on) assigned-to dropdown + orig est input only
-        // Remaining Work will be set = Orig Est programmatically on creation
-        const tcs=TASK_TYPES.map((tt,i)=>`<td class="tc" id="tc_${r.id}_${i}" onclick="toggleCell(${r.id},${i},event)">
+        // Each task type cell renders in one of three states:
+        //   • BLANK    — task type doesn't match the requirement's regression state
+        //   • EXISTS   — a task of this type already exists (open) this sprint → disabled
+        //   • NORMAL   — selectable: checkbox + (when on) assignee + orig est
+        const isReg=isRegressionReq(r);
+        const existSet=existingTaskTypes[r.id]||_EMPTY_SET;
+        const tcs=TASK_TYPES.map((tt,i)=>{
+            const eligible=isReg?!!tt.regression:!tt.regression;
+            if(!eligible){
+                return `<td class="tc tc-na" title="Not applicable — this requirement is ${isReg?'tagged Regression, so only regression tasks apply':'not a Regression requirement'}"><span class="tc-na-dash">▨</span></td>`;
+            }
+            if(existSet.has(i)){
+                return `<td class="tc tc-exists" title="A '${escAttr(tt.name)}' task already exists (open) in this sprint for requirement #${r.id}">
+                    <div class="tc-inner">
+                        <input type="checkbox" class="tc-cb" disabled checked>
+                        <span class="tc-exists-badge">✓ exists</span>
+                    </div>
+                </td>`;
+            }
+            return `<td class="tc" id="tc_${r.id}_${i}" onclick="toggleCell(${r.id},${i},event)">
             <div class="tc-inner">
                 <input type="checkbox" class="tc-cb" id="cb_${r.id}_${i}"
                     onclick="event.stopPropagation()" onchange="onCellChange(${r.id},${i})">
@@ -1646,7 +1769,8 @@ function renderExcel(){
                         onclick="event.stopPropagation()" onchange="updateSummary()">
                 </div>
             </div>
-        </td>`).join('');
+        </td>`;
+        }).join('');
         return `<tr id="row_${r.id}">
             <td class="cell-num c-num col-sticky" style="left:0;">${idx+1}</td>
             <td class="cell-id c-id col-sticky" style="left:36px;"><a href="${r.url}" target="_blank">#${r.id}</a></td>
@@ -1665,6 +1789,7 @@ function renderExcel(){
 ═══════════════════════════ */
 function toggleCell(reqId,i,event){
     const cb=document.getElementById('cb_'+reqId+'_'+i);
+    if(!cb) return;   // blank / disabled (exists) cells have no checkbox
     cb.checked=!cb.checked;
     onCellChange(reqId,i);
 }
@@ -1689,7 +1814,10 @@ function syncRow(reqId){
 function globalAll(state){
     filteredReqs.forEach(r=>{
         if(!reqData[r.id]) reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
-        TASK_TYPES.forEach((_,i)=>{state?reqData[r.id].sel.add(i):reqData[r.id].sel.delete(i);});
+        TASK_TYPES.forEach((_,i)=>{
+            if(state){ if(isCellSelectable(r,i)) reqData[r.id].sel.add(i); }
+            else reqData[r.id].sel.delete(i);
+        });
         syncRow(r.id);
     });
     updateSummary();
@@ -1697,7 +1825,7 @@ function globalAll(state){
 function globalTT(disc){
     filteredReqs.forEach(r=>{
         if(!reqData[r.id]) reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
-        TASK_TYPES.forEach((tt,i)=>{if(tt.disc===disc) reqData[r.id].sel.add(i);});
+        TASK_TYPES.forEach((tt,i)=>{if(tt.disc===disc&&isCellSelectable(r,i)) reqData[r.id].sel.add(i);});
         syncRow(r.id);
     });
     updateSummary();
@@ -1854,6 +1982,7 @@ function generateAllTasks(){
     for(const req of toProcess){
         const selIdx=[...(reqData[req.id]||{sel:new Set()}).sel];
         for(const i of selIdx){
+            if(!isCellSelectable(req,i)) continue;   // guard: skip gated / already-existing types
             const tt=TASK_TYPES[i];
             const assignedTo=(document.getElementById('at_'+req.id+'_'+i)||{}).value||'';
             const origEst=parseFloat((document.getElementById('oe_'+req.id+'_'+i)||{}).value)||0;
@@ -1996,11 +2125,14 @@ async function confirmGenerate(){
     showToast(totalFail===0?'🎉 '+totalOk+' tasks created successfully!':'⚠️ '+totalOk+' ok / '+totalFail+' failed',totalFail>0?'warn':'ok');
     btn.disabled=false; btn.textContent='⚡ Generate All Tasks';
 
-    // Refresh the excel table — clears all checkboxes and resets selection state
-    reqData={};
-    requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};});
-    filteredReqs=[...requirements];
-    renderExcel();
+    // Reload so just-created tasks now render as "✓ exists" (disabled) and the
+    // selection resets — keeps the active deliverable filter / search in place.
+    if(totalOk>0){ loadRequirements({silent:true}); }
+    else{
+        reqData={};
+        requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};reqMap[r.id]=r;});
+        applyReqFilters();
+    }
 }
 
 function addLog(el,msg,type){
@@ -2012,10 +2144,77 @@ function addLog(el,msg,type){
 /* ═══════════════════════════
    FILTER
 ═══════════════════════════ */
-function filterReqs(){
-    const q=document.getElementById('reqSearch').value.trim().toLowerCase();
-    filteredReqs=requirements.filter(r=>!q||r.title.toLowerCase().includes(q)||String(r.id).includes(q));
+/* Apply the search box + deliverable-type multiselect to `requirements`,
+   then re-render. Deliverable matching is EXACT (whole-tag), case-insensitive. */
+function applyReqFilters(){
+    const q=(document.getElementById('reqSearch')?.value||'').trim().toLowerCase();
+    const delivSel=getSelectedDeliv();   // null = no filter (all / none selected)
+    filteredReqs=requirements.filter(r=>{
+        if(q && !(r.title.toLowerCase().includes(q)||String(r.id).includes(q))) return false;
+        if(delivSel){
+            const tags=String(r.tags||'').split(';').map(t=>t.trim().toLowerCase());
+            if(!delivSel.some(sel=>tags.includes(sel.toLowerCase()))) return false;
+        }
+        return true;
+    });
     renderExcel();
+}
+function filterReqs(){ applyReqFilters(); }
+
+/* Re-fetch the requirements + existing-task state for the current Sprint/Area/filter. */
+function refreshRequirements(){
+    if(!selectedIter){showToast('❌ Select a sprint first','err');return;}
+    loadRequirements({silent:true});
+}
+
+/* ── DELIVERABLE-TYPE MULTISELECT (Tab 1) ── */
+let _delivOpen=false;
+function toggleDelivDrop(e){
+    if(e) e.stopPropagation();
+    _delivOpen=!_delivOpen;
+    document.getElementById('delivMsDrop').classList.toggle('open',_delivOpen);
+    document.getElementById('delivMsBtn').classList.toggle('open',_delivOpen);
+}
+document.addEventListener('click',function(e){
+    const w=document.getElementById('delivMs');
+    if(w&&!w.contains(e.target)){
+        _delivOpen=false;
+        const d=document.getElementById('delivMsDrop'); if(d) d.classList.remove('open');
+        const b=document.getElementById('delivMsBtn'); if(b) b.classList.remove('open');
+    }
+});
+function toggleAllDeliv(ch){
+    document.querySelectorAll('.deliv-cb').forEach(cb=>cb.checked=ch);
+    updateDelivLabel(); reloadForDeliv();
+}
+function onDelivChange(){
+    const all=document.querySelectorAll('.deliv-cb');
+    const checked=[...all].filter(cb=>cb.checked);
+    const a=document.getElementById('delivAll'); if(a) a.checked=checked.length===all.length;
+    updateDelivLabel(); reloadForDeliv();
+}
+function updateDelivLabel(){
+    const all=document.querySelectorAll('.deliv-cb');
+    const checked=[...all].filter(cb=>cb.checked);
+    const btn=document.getElementById('delivMsBtn'); if(!btn) return;
+    if(checked.length===all.length||checked.length===0){ btn.textContent='All Deliverable Types'; }
+    else{ btn.textContent=checked.map(cb=>cb.value==='Deliverables Adhoc'?'Adhoc':cb.value).join(', '); }
+}
+/* Returns array of exact tag strings to match, or null for "no filter" (all/none). */
+function getSelectedDeliv(){
+    const all=[...document.querySelectorAll('.deliv-cb')];
+    if(!all.length) return null;
+    const checked=all.filter(cb=>cb.checked).map(cb=>cb.value);
+    if(checked.length===all.length||checked.length===0) return null;
+    return checked;
+}
+/* Deliverable filter drives a fresh server fetch so data is always latest. */
+function reloadForDeliv(){
+    if(!selectedIter||document.getElementById('reqScreen').style.display!=='block'){
+        // Not loaded yet — the filter will be applied on the next Load Requirements
+        return;
+    }
+    loadRequirements({silent:true});
 }
 
 /* ═══════════════════════════
