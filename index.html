@@ -977,6 +977,33 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
 body.light .pager-inner{background:#f4f7ff;border-color:#d4dff2;}
 body.light .pager-size select{background:#ffffff;border-color:#d0ddf0;color:#0d1a30;}
 
+/* ── PER-CELL TESTER PICKER ── */
+.tc-testers-btn{
+  width:100%;background:var(--inp2);border:1px solid var(--b);border-radius:5px;
+  padding:3px 5px;color:var(--acc);font-size:.6rem;font-weight:700;
+  font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;white-space:nowrap;
+  transition:border-color .12s ease,background .12s ease;
+}
+.tc-testers-btn:hover{border-color:var(--bfocus);background:var(--acc-glow);}
+body.light .tc-testers-btn{background:#f4f7ff;border-color:#d0ddf0;color:#0284c7;}
+.tester-pop{
+  display:none;position:fixed;z-index:1200;max-height:240px;overflow-y:auto;
+  background:var(--bg2);border:1px solid var(--bs);border-radius:var(--r);
+  box-shadow:0 8px 28px var(--sh);padding:4px 0;
+}
+.tester-pop::-webkit-scrollbar{width:5px;}
+.tester-pop::-webkit-scrollbar-thumb{background:var(--bs);border-radius:3px;}
+.tester-item{
+  display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:.68rem;
+  cursor:pointer;color:var(--ts);transition:background .15s;
+}
+.tester-item:hover{background:var(--row-hover);}
+.tester-item input{accent-color:var(--acc);width:13px;height:13px;flex-shrink:0;}
+.tester-item.select-all{border-bottom:1px solid var(--b);margin-bottom:2px;font-weight:600;color:var(--acc);}
+body.light .tester-pop{background:#ffffff;border-color:#adc0e0;box-shadow:0 8px 24px rgba(15,30,60,0.12);}
+body.light .tester-item{color:#1a2e4a;}
+body.light .tester-item:hover{background:rgba(2,132,199,0.05);}
+
 /* ── GENERATION LOADER (inline live feed) ── */
 .gen-loader{
   display:none;margin-top:14px;padding:12px 16px;
@@ -999,6 +1026,7 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
 
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading…</div></div>
 <div class="toast" id="toast"></div>
+<div class="tester-pop" id="testerPop"></div>
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -1355,14 +1383,17 @@ const TASK_TYPES=[
     {name:'L2',                    disc:'Test'},
     {name:'L3',                    disc:'Test'},
     {name:'Test Data Preparation', disc:'Test', execType:'AI-Test-Test Data Preparation'},
-    // Regression group — always shown last; these also get the "Regression" tag
-    // perMember:true → one task is created per Test-discipline member from sprint
-    // capacity (see generateAllTasks). Used for PT Regression & Performance Testing.
-    {name:'PT Regression',         disc:'Test', regression:true, perMember:true},
+    // Regression group — always shown last; these also get the "Regression" tag.
+    //   testerPick:true → user chooses which Test members get a task (per-cell picker)
+    //   perMember:true  → one task auto-created per Test member
+    {name:'PT Regression',         disc:'Test', regression:true, testerPick:true},
     {name:'CA Regression',         disc:'Test', regression:true},
-    {name:'Performance Testing - ',disc:'Test', regression:true, perMember:true},
+    {name:'Performance Testing - ',disc:'Test', regression:true, testerPick:true},
     {name:'Production Testing',     disc:'Test', regression:true},
     {name:'Azure Testing',          disc:'Test', regression:true},
+    // ALM group — only applies to requirements tagged "ALM". One task per Test
+    // member, tagged "Product; ALM". All other task types are blocked for ALM reqs.
+    {name:'ALM',                   disc:'Test', alm:true, perMember:true},
 ];
 /* Reference name for the "Task Execution Type" field.
    null = not yet resolved · '' = looked up but not found in this project.
@@ -1389,8 +1420,12 @@ async function resolveExecTypeField(){
 function ttExecType(t){ return (t&&t.execType) ? t.execType : 'Manual'; }
 /* Tags applied on task creation:
    - every task gets "Product"
+   - ALM tasks additionally get "ALM"
    - regression-group tasks additionally get "Regression" */
-function ttTags(t){ return t&&t.regression ? 'Product; Regression' : 'Product'; }
+function ttTags(t){
+    if(t&&t.alm) return 'Product; ALM';
+    return t&&t.regression ? 'Product; Regression' : 'Product';
+}
 /* Build the default task title, avoiding a double "-" when the type name
    already ends with a hyphen (e.g. "Performance Testing - "). */
 function ttDefaultTitle(ttName,reqTitle){
@@ -1406,7 +1441,7 @@ function ttDefaultTitle(ttName,reqTitle){
 function ttTitleForTask(t){
     const base=String(t.ttName||'').trim();
     const sep=base.endsWith('-') ? ' ' : ' - ';
-    if(t.regression){
+    if(t.regression||t.alm){
         const who=assignedDisplayName(t.assignedTo);
         return base+sep+(who||'Unassigned');
     }
@@ -1485,6 +1520,22 @@ function wiqlEscPath(s){return String(s||'').replace(/^\\/,'').replace(/\\Iterat
 
 /* A requirement counts as "Regression" only when it carries the exact tag 'Regression'. */
 function isRegressionReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.trim().toLowerCase()==='regression');}
+/* A requirement counts as "ALM" when it carries the exact tag 'ALM'. */
+function isAlmReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.trim().toLowerCase()==='alm');}
+
+/* Which task-type family a requirement belongs to. ALM takes precedence over
+   Regression, which takes precedence over the normal (delivery) family. */
+function reqCategory(r){ if(isAlmReq(r)) return 'alm'; if(isRegressionReq(r)) return 'reg'; return 'normal'; }
+
+/* Is a task type applicable to a requirement of the given category?
+   • alm    → ONLY the ALM task type
+   • reg    → regression task types (never ALM)
+   • normal → everything that isn't regression or ALM */
+function ttEligibleFor(tt,cat){
+    if(cat==='alm') return !!tt.alm;
+    if(cat==='reg') return !!tt.regression && !tt.alm;
+    return !tt.regression && !tt.alm;
+}
 
 /* Map an existing task's title to a TASK_TYPES index by longest matching prefix.
    Titles follow "{Type} - {Requirement|Person}", so the leading type name identifies it. */
@@ -1504,8 +1555,7 @@ function detectTaskType(title){
 function isCellSelectable(r,i){
     if(!r) return false;
     const tt=TASK_TYPES[i];
-    const eligible=isRegressionReq(r)?!!tt.regression:!tt.regression;
-    if(!eligible) return false;
+    if(!ttEligibleFor(tt,reqCategory(r))) return false;
     if((existingTaskTypes[r.id]||_EMPTY_SET).has(i)) return false;
     return true;
 }
@@ -1866,12 +1916,13 @@ function renderExcel(){
         //   • BLANK    — task type doesn't match the requirement's regression state
         //   • EXISTS   — a task of this type already exists (open) this sprint → disabled
         //   • NORMAL   — selectable: checkbox + (when on) assignee + orig est
-        const isReg=isRegressionReq(r);
+        const cat=reqCategory(r);
+        const naMsg=cat==='alm'?'tagged ALM — only the ALM task applies':cat==='reg'?'tagged Regression, so only regression tasks apply':'not a Regression / ALM requirement';
         const existSet=existingTaskTypes[r.id]||_EMPTY_SET;
         const tcs=TASK_TYPES.map((tt,i)=>{
-            const eligible=isReg?!!tt.regression:!tt.regression;
+            const eligible=ttEligibleFor(tt,cat);
             if(!eligible){
-                return `<td class="tc tc-na" title="Not applicable — this requirement is ${isReg?'tagged Regression, so only regression tasks apply':'not a Regression requirement'}"><span class="tc-na-dash">▨</span></td>`;
+                return `<td class="tc tc-na" title="Not applicable — this requirement is ${naMsg}"><span class="tc-na-dash">▨</span></td>`;
             }
             if(existSet.has(i)){
                 return `<td class="tc tc-exists" title="A '${escAttr(tt.name)}' task already exists (open) in this sprint for requirement #${r.id}">
@@ -1881,21 +1932,27 @@ function renderExcel(){
                     </div>
                 </td>`;
             }
-            // perMember types (PT Regression / Performance Testing) create one task
-            // per Test-discipline member — no per-cell assignee, just an estimate
-            // applied to each, and a "× N testers" indicator.
-            const fieldsHtml = tt.perMember
-                ? `<input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h/ea" min="0" step="0.5"
-                        title="Original Estimate per tester (hours)"
-                        onclick="event.stopPropagation()" onchange="setCellOe(${r.id},${i},this.value)">
-                   <div class="tc-permember" style="font-size:.52rem;color:${nTesters?'var(--acc)':'#f87171'};font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;"
-                        title="One task will be created per Test-discipline member from sprint capacity">${nTesters?('× '+nTesters+' tester'+(nTesters!==1?'s':'')):'no testers'}</div>`
-                : `<div class="mini-sel-wrap">
-                        <select class="mini-sel" id="at_${r.id}_${i}" onclick="event.stopPropagation()" onchange="setCellAt(${r.id},${i},this.value)" title="Assigned To">${memberOpts}</select>
-                   </div>
-                   <input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h" min="0" step="0.5"
-                        title="Original Estimate (hours)"
+            // Three cell layouts:
+            //   • testerPick (PT / Performance) → estimate + a per-cell tester picker
+            //   • perMember  (ALM)              → estimate + "× N testers" (auto all)
+            //   • normal                        → assignee dropdown + estimate
+            const perEa=(tt.testerPick||tt.perMember)?'/ea':'';
+            const estInp=`<input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h${perEa}" min="0" step="0.5"
+                        title="Original Estimate${perEa?' per tester':''} (hours)"
                         onclick="event.stopPropagation()" onchange="setCellOe(${r.id},${i},this.value)">`;
+            let fieldsHtml;
+            if(tt.testerPick){
+                fieldsHtml=estInp+
+                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`;
+            }else if(tt.perMember){
+                fieldsHtml=estInp+
+                   `<div class="tc-permember" style="font-size:.52rem;color:${nTesters?'var(--acc)':'#f87171'};font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;"
+                        title="One task will be created per Test-discipline member from sprint capacity">${nTesters?('× '+nTesters+' tester'+(nTesters!==1?'s':'')):'no testers'}</div>`;
+            }else{
+                fieldsHtml=`<div class="mini-sel-wrap">
+                        <select class="mini-sel" id="at_${r.id}_${i}" onclick="event.stopPropagation()" onchange="setCellAt(${r.id},${i},this.value)" title="Assigned To">${memberOpts}</select>
+                   </div>`+estInp;
+            }
             return `<td class="tc" id="tc_${r.id}_${i}" onclick="toggleCell(${r.id},${i},event)">
             <div class="tc-inner">
                 <input type="checkbox" class="tc-cb" id="cb_${r.id}_${i}"
@@ -1948,6 +2005,80 @@ function setCellOe(reqId,i,val){
     reqData[reqId].oe[i]=val;
     updateSummary();
 }
+
+/* ── PER-CELL TESTER PICKER (PT Regression / Performance Testing) ──
+   The chosen testers for a testerPick cell live on reqData[reqId].testers[i]
+   (a Set of member "value" strings). Defaults to ALL current members. */
+function getCellTesters(reqId,i){
+    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{},testers:{}};
+    if(!reqData[reqId].testers) reqData[reqId].testers={};
+    if(!(i in reqData[reqId].testers)) reqData[reqId].testers[i]=new Set(memberList.map(m=>m.value));
+    return reqData[reqId].testers[i];
+}
+/* Member values that will actually receive a task for this cell. */
+function effectiveTesters(reqId,i,tt){
+    if(tt.perMember) return memberList.map(m=>m.value);            // ALM → all members
+    if(tt.testerPick){
+        const rd=reqData[reqId];
+        if(rd&&rd.testers&&rd.testers[i]) return [...rd.testers[i]].filter(v=>memberList.some(m=>m.value===v));
+        return memberList.map(m=>m.value);                        // default: all
+    }
+    return null;
+}
+/* Selected-tester count without creating a default set (read-only). */
+function cellTesterCount(reqId,i){
+    const rd=reqData[reqId];
+    if(rd&&rd.testers&&rd.testers[i]) return [...rd.testers[i]].filter(v=>memberList.some(m=>m.value===v)).length;
+    return memberList.length;
+}
+function updateTesterBtn(reqId,i){
+    const el=document.getElementById('tbn_'+reqId+'_'+i);
+    if(el) el.textContent=cellTesterCount(reqId,i)+'/'+memberList.length;
+}
+function testerPopHtml(reqId,i){
+    if(!memberList.length) return '<div style="padding:8px 10px;color:#f87171;font-size:.64rem;">No testers loaded</div>';
+    const sel=getCellTesters(reqId,i);
+    const allOn=memberList.every(m=>sel.has(m.value));
+    return '<label class="tester-item select-all"><input type="checkbox" '+(allOn?'checked':'')+' onchange="toggleAllTesters('+reqId+','+i+',this.checked)"> Select All</label>'+
+        memberList.map(m=>'<label class="tester-item"><input type="checkbox" value="'+escAttr(m.value)+'" '+(sel.has(m.value)?'checked':'')+' onchange="onTesterToggle('+reqId+','+i+',this.value,this.checked)"> '+escHtml(m.name)+'</label>').join('');
+}
+let _testerPop={reqId:null,i:null};
+function openTesterPop(reqId,i,ev){
+    if(ev) ev.stopPropagation();
+    const pop=document.getElementById('testerPop');
+    if(_testerPop.reqId===reqId&&_testerPop.i===i&&pop.style.display==='block'){ closeTesterPop(); return; }
+    _testerPop={reqId,i};
+    pop.innerHTML=testerPopHtml(reqId,i);
+    const btn=document.getElementById('tb_'+reqId+'_'+i);
+    const r=btn.getBoundingClientRect();
+    const pw=210;
+    let left=r.left; if(left+pw>window.innerWidth-8) left=window.innerWidth-pw-8; if(left<8) left=8;
+    let top=r.bottom+4; if(top+240>window.innerHeight) top=Math.max(8,r.top-244);
+    pop.style.left=left+'px'; pop.style.top=top+'px'; pop.style.width=pw+'px'; pop.style.display='block';
+}
+function closeTesterPop(){const pop=document.getElementById('testerPop');if(pop)pop.style.display='none';_testerPop={reqId:null,i:null};}
+function onTesterToggle(reqId,i,val,ch){
+    const s=getCellTesters(reqId,i);
+    ch?s.add(val):s.delete(val);
+    const pop=document.getElementById('testerPop');
+    const sa=pop&&pop.querySelector('.select-all input');
+    if(sa) sa.checked=memberList.every(m=>s.has(m.value));
+    updateTesterBtn(reqId,i); updateSummary();
+}
+function toggleAllTesters(reqId,i,ch){
+    const s=getCellTesters(reqId,i);
+    s.clear(); if(ch) memberList.forEach(m=>s.add(m.value));
+    const pop=document.getElementById('testerPop');
+    if(pop&&_testerPop.reqId===reqId&&_testerPop.i===i) pop.innerHTML=testerPopHtml(reqId,i);
+    updateTesterBtn(reqId,i); updateSummary();
+}
+document.addEventListener('click',function(e){
+    const pop=document.getElementById('testerPop');
+    if(!pop||pop.style.display!=='block') return;
+    if(pop.contains(e.target)) return;
+    if(e.target.closest&&e.target.closest('.tc-testers-btn')) return;
+    closeTesterPop();
+});
 function syncRow(reqId){
     const rd=reqData[reqId]||{sel:new Set(),at:{},oe:{}};
     const sel=rd.sel;
@@ -1962,6 +2093,7 @@ function syncRow(reqId){
         if(at && rd.at && rd.at[i]!=null) at.value=rd.at[i];
         const oe=document.getElementById('oe_'+reqId+'_'+i);
         if(oe && rd.oe && rd.oe[i]!=null) oe.value=rd.oe[i];
+        if(document.getElementById('tb_'+reqId+'_'+i)) updateTesterBtn(reqId,i);
     });
 }
 function globalAll(state){
@@ -1984,13 +2116,17 @@ function globalTT(disc){
     updateSummary();
 }
 function updateSummary(){
-    // perMember cells expand to one task per Test member (min 1 when none loaded).
-    const perN=Math.max(memberList.length,1);
     let reqCount=0,taskCount=0;
     filteredReqs.forEach(r=>{
         const sel=(reqData[r.id]||{sel:new Set()}).sel;
         if(sel.size>0) reqCount++;
-        sel.forEach(i=>{ taskCount += (TASK_TYPES[i]&&TASK_TYPES[i].perMember) ? perN : 1; });
+        sel.forEach(i=>{
+            const tt=TASK_TYPES[i]; if(!tt) return;
+            if(tt.perMember||tt.testerPick){
+                const n=effectiveTesters(r.id,i,tt).length;
+                taskCount += n || (memberList.length?0:1);   // fallback: 1 unassigned when no testers loaded
+            } else taskCount += 1;
+        });
     });
     document.getElementById('smReqs').textContent=reqCount;
     document.getElementById('smTasks').textContent=taskCount;
@@ -2158,7 +2294,7 @@ function onPreviewAssignee(n){
     if(!t) return;
     const sel=document.getElementById('pa_'+n);
     t.assignedTo=sel?sel.value:'';
-    if(t.regression){
+    if(t.regression||t.alm){
         const ti=document.getElementById('pt_'+n);
         if(ti && ti.dataset.auto!=='0'){ ti.value=ttTitleForTask(t); }
     }
@@ -2182,17 +2318,16 @@ function generateAllTasks(){
             const origEst=parseFloat(rawOe)||0;
             const base={
                 reqId:req.id, reqTitle:req.title, reqIter:req.iter, reqArea:req.area,
-                ttIdx:i, ttName:tt.name, disc:tt.disc, regression:!!tt.regression, execType:ttExecType(tt),
+                ttIdx:i, ttName:tt.name, disc:tt.disc, regression:!!tt.regression, alm:!!tt.alm, execType:ttExecType(tt),
                 origEst,
                 remWork:origEst,   // Remaining = Original Estimate
             };
-            if(tt.perMember){
-                // One task per Test-discipline member from sprint capacity
-                if(memberList.length){
-                    memberList.forEach(m=>_pendingTasks.push({...base, assignedTo:m.value}));
-                }else{
-                    _pendingTasks.push({...base, assignedTo:''});
-                }
+            if(tt.perMember||tt.testerPick){
+                // One task per selected/auto Test-discipline member from sprint capacity
+                const testers=effectiveTesters(req.id,i,tt);
+                if(testers.length){ testers.forEach(v=>_pendingTasks.push({...base, assignedTo:v})); }
+                else if(!memberList.length){ _pendingTasks.push({...base, assignedTo:''}); }
+                // else: members loaded but user selected none → skip this cell
             }else{
                 _pendingTasks.push({...base, assignedTo:rawAt||''});
             }
