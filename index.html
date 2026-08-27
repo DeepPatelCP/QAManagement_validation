@@ -126,7 +126,7 @@ body.light::before{
   font-family:'Bricolage Grotesque',sans-serif;
   font-size:.95rem;font-weight:700;
   background:linear-gradient(135deg,#38bdf8 0%,#818cf8 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   letter-spacing:-.01em;
 }
 .topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -957,12 +957,76 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
 
 /* ── ERROR PANEL ── */
 #errPanel{font-family:'DM Sans',sans-serif;}
+
+/* ── PAGINATION ── */
+.pager{margin-top:10px;}
+.pager-inner{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:8px 12px;background:var(--glass2);border:1px solid var(--b);border-radius:var(--r);
+}
+.pager-size,.pager-nav{display:flex;align-items:center;gap:6px;}
+.pager-size span,.pager-info{font-size:.66rem;color:var(--tm);font-weight:500;}
+.pager-info{font-family:'Space Mono',monospace;}
+.pager-page{font-size:.66rem;color:var(--ts);font-weight:600;font-family:'Space Mono',monospace;padding:0 4px;white-space:nowrap;}
+.pager-size select{
+  background:var(--inp);border:1px solid var(--b);border-radius:var(--r-sm);
+  padding:3px 8px;color:var(--t);font-size:.68rem;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;
+}
+.pager-size select:focus{border-color:var(--bfocus);}
+.pager-nav .btn-xs{min-width:26px;font-weight:700;}
+body.light .pager-inner{background:#f4f7ff;border-color:#d4dff2;}
+body.light .pager-size select{background:#ffffff;border-color:#d0ddf0;color:#0d1a30;}
+
+/* ── PER-CELL TESTER PICKER ── */
+.tc-testers-btn{
+  width:100%;background:var(--inp2);border:1px solid var(--b);border-radius:5px;
+  padding:3px 5px;color:var(--acc);font-size:.6rem;font-weight:700;
+  font-family:'DM Sans',sans-serif;cursor:pointer;text-align:center;white-space:nowrap;
+  transition:border-color .12s ease,background .12s ease;
+}
+.tc-testers-btn:hover{border-color:var(--bfocus);background:var(--acc-glow);}
+body.light .tc-testers-btn{background:#f4f7ff;border-color:#d0ddf0;color:#0284c7;}
+.tester-pop{
+  display:none;position:fixed;z-index:1200;max-height:240px;overflow-y:auto;
+  background:var(--bg2);border:1px solid var(--bs);border-radius:var(--r);
+  box-shadow:0 8px 28px var(--sh);padding:4px 0;
+}
+.tester-pop::-webkit-scrollbar{width:5px;}
+.tester-pop::-webkit-scrollbar-thumb{background:var(--bs);border-radius:3px;}
+.tester-item{
+  display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:.68rem;
+  cursor:pointer;color:var(--ts);transition:background .15s;
+}
+.tester-item:hover{background:var(--row-hover);}
+.tester-item input{accent-color:var(--acc);width:13px;height:13px;flex-shrink:0;}
+.tester-item.select-all{border-bottom:1px solid var(--b);margin-bottom:2px;font-weight:600;color:var(--acc);}
+body.light .tester-pop{background:#ffffff;border-color:#adc0e0;box-shadow:0 8px 24px rgba(15,30,60,0.12);}
+body.light .tester-item{color:#1a2e4a;}
+body.light .tester-item:hover{background:rgba(2,132,199,0.05);}
+
+/* ── GENERATION LOADER (inline live feed) ── */
+.gen-loader{
+  display:none;margin-top:14px;padding:12px 16px;
+  background:var(--glass2);border:1px solid var(--bs);border-radius:var(--r);
+}
+.gen-loader.vis{display:block;}
+.gen-loader-top{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.gen-loader-spin{
+  width:22px;height:22px;flex-shrink:0;
+  border:2px solid rgba(56,189,248,.15);border-top-color:var(--acc);
+  border-radius:50%;animation:spin .75s linear infinite;
+}
+.gen-loader-txt{font-size:.74rem;font-weight:600;color:var(--acc);font-family:'DM Sans',sans-serif;}
+.gen-loader-sub{font-size:.64rem;color:var(--tm);margin-top:2px;font-family:'Space Mono',monospace;}
+.gen-loader .prog-bar-track{height:7px;}
+body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
 </style>
 </head>
 <body>
 
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading…</div></div>
 <div class="toast" id="toast"></div>
+<div class="tester-pop" id="testerPop"></div>
 
 <!-- TOP BAR -->
 <div class="topbar">
@@ -1071,6 +1135,7 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
             <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Deliverable" checked onchange="onDelivChange()" style="accent-color:var(--acc);"> Deliverable</label>
             <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Non-Deliverable" checked onchange="onDelivChange()" style="accent-color:var(--acc);"> Non-Deliverable</label>
             <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Deliverables Adhoc" checked onchange="onDelivChange()" style="accent-color:var(--acc);"> Adhoc</label>
+            <label class="fp-multiselect-item"><input type="checkbox" class="deliv-cb" value="Misc" checked onchange="onDelivChange()" style="accent-color:var(--acc);" title="Requirements tagged ALM or Regression"> Misc <span style="color:var(--td);font-size:.6rem;margin-left:2px;">(ALM / Regression)</span></label>
           </div>
         </div>
         <button class="btn btn-ghost btn-sm" id="reqRefreshBtn" onclick="refreshRequirements()" title="Re-fetch the latest requirements for the current Sprint / Area / filter">🔄 Refresh</button>
@@ -1091,6 +1156,17 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
           <tbody id="excelBody"></tbody>
         </table>
         <div class="empty-state" id="reqEmpty" style="display:none;">No requirements found.</div>
+      </div>
+      <div id="reqPager" class="pager"></div>
+      <div class="gen-loader" id="genLoader">
+        <div class="gen-loader-top">
+          <div class="gen-loader-spin"></div>
+          <div>
+            <div class="gen-loader-txt" id="genLoaderTxt">Preparing…</div>
+            <div class="gen-loader-sub" id="genLoaderSub"></div>
+          </div>
+        </div>
+        <div class="prog-bar-track"><div class="prog-bar-fill" id="genLoaderBar" style="width:0%;"></div></div>
       </div>
       <div class="gen-log" id="genLog"></div>
       <div class="success-banner" id="successBanner"></div>
@@ -1189,6 +1265,7 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
         No tasks found for the selected Sprint &amp; Area. Try a different filter.
       </div>
     </div>
+    <div id="tlPager" class="pager"></div>
   </div>
 </div><!-- /tabContent2 -->
 
@@ -1307,12 +1384,17 @@ const TASK_TYPES=[
     {name:'L2',                    disc:'Test'},
     {name:'L3',                    disc:'Test'},
     {name:'Test Data Preparation', disc:'Test', execType:'AI-Test-Test Data Preparation'},
-    // Regression group — always shown last; these also get the "Regression" tag
-    {name:'PT Regression',         disc:'Test', regression:true},
+    // Regression group — always shown last; these also get the "Regression" tag.
+    //   testerPick:true → user chooses which Test members get a task (per-cell picker)
+    //   perMember:true  → one task auto-created per Test member
+    {name:'PT Regression',         disc:'Test', regression:true, testerPick:true},
     {name:'CA Regression',         disc:'Test', regression:true},
-    {name:'Performance Testing - ',disc:'Test', regression:true},
+    {name:'Performance Testing - ',disc:'Test', regression:true, testerPick:true},
     {name:'Production Testing',     disc:'Test', regression:true},
     {name:'Azure Testing',          disc:'Test', regression:true},
+    // ALM group — only applies to requirements tagged "ALM". One task per Test
+    // member, tagged "Product; ALM". All other task types are blocked for ALM reqs.
+    {name:'ALM',                   disc:'Test', alm:true, perMember:true},
 ];
 /* Reference name for the "Task Execution Type" field.
    null = not yet resolved · '' = looked up but not found in this project.
@@ -1339,8 +1421,12 @@ async function resolveExecTypeField(){
 function ttExecType(t){ return (t&&t.execType) ? t.execType : 'Manual'; }
 /* Tags applied on task creation:
    - every task gets "Product"
+   - ALM tasks additionally get "ALM"
    - regression-group tasks additionally get "Regression" */
-function ttTags(t){ return t&&t.regression ? 'Product; Regression' : 'Product'; }
+function ttTags(t){
+    if(t&&t.alm) return 'Product; ALM';
+    return t&&t.regression ? 'Product; Regression' : 'Product';
+}
 /* Build the default task title, avoiding a double "-" when the type name
    already ends with a hyphen (e.g. "Performance Testing - "). */
 function ttDefaultTitle(ttName,reqTitle){
@@ -1356,7 +1442,7 @@ function ttDefaultTitle(ttName,reqTitle){
 function ttTitleForTask(t){
     const base=String(t.ttName||'').trim();
     const sep=base.endsWith('-') ? ' ' : ' - ';
-    if(t.regression){
+    if(t.regression||t.alm){
         const who=assignedDisplayName(t.assignedTo);
         return base+sep+(who||'Unassigned');
     }
@@ -1403,11 +1489,54 @@ let reqMap={};              // reqId -> requirement object (for quick lookups)
 let existingTaskTypes={};   // reqId -> Set(ttIdx) of task types already created (open) this sprint
 const _EMPTY_SET=new Set();
 
+/* Tester/member details are fetched from sprint capacity exactly ONCE per
+   Sprint+Area selection. _membersKey holds the "iter|area" the current memberList
+   was loaded for; a silent reload (after task creation) reuses it and skips the
+   capacity call. Cleared by resetLoadedReqs() when Sprint/Area changes. */
+let _membersKey='';
+
+/* Requirements grid pagination (Tab 1). */
+let reqPage=1, reqPageSize=20;
+
+/* Requirement tags that cause an item to be skipped entirely on load. */
+const SKIP_REQ_TAGS=['engineering operations & support'];
+function hasSkipTag(tags){
+    return String(tags||'').split(';').some(t=>SKIP_REQ_TAGS.includes(t.trim().toLowerCase()));
+}
+
+/* Reset everything derived from a Sprint/Area selection. Called when either the
+   Sprint or the Area dropdown value changes so stale requirements, selections and
+   the cached tester list can't leak across selections. */
+function resetLoadedReqs(){
+    requirements=[];filteredReqs=[];reqData={};reqMap={};existingTaskTypes={};
+    memberList=[];_membersKey='';reqPage=1;
+    const rs=document.getElementById('reqScreen'); if(rs) rs.style.display='none';
+    const sp=document.getElementById('sprintPanel'); if(sp) sp.style.display='block';
+    const banner=document.getElementById('successBanner'); if(banner) banner.classList.remove('vis');
+    const log=document.getElementById('genLog'); if(log){ log.classList.remove('vis'); log.innerHTML=''; }
+}
+
 /* Shared WIQL path escaper. */
 function wiqlEscPath(s){return String(s||'').replace(/^\\/,'').replace(/\\Iteration\\/i,'\\').replace(/\\Area\\/i,'\\').replace(/'/g,"''");}
 
 /* A requirement counts as "Regression" only when it carries the exact tag 'Regression'. */
 function isRegressionReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.trim().toLowerCase()==='regression');}
+/* A requirement counts as "ALM" when it carries the exact tag 'ALM'. */
+function isAlmReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.trim().toLowerCase()==='alm');}
+
+/* Which task-type family a requirement belongs to. ALM takes precedence over
+   Regression, which takes precedence over the normal (delivery) family. */
+function reqCategory(r){ if(isAlmReq(r)) return 'alm'; if(isRegressionReq(r)) return 'reg'; return 'normal'; }
+
+/* Is a task type applicable to a requirement of the given category?
+   • alm    → ONLY the ALM task type
+   • reg    → regression task types (never ALM)
+   • normal → everything that isn't regression or ALM */
+function ttEligibleFor(tt,cat){
+    if(cat==='alm') return !!tt.alm;
+    if(cat==='reg') return !!tt.regression && !tt.alm;
+    return !tt.regression && !tt.alm;
+}
 
 /* Map an existing task's title to a TASK_TYPES index by longest matching prefix.
    Titles follow "{Type} - {Requirement|Person}", so the leading type name identifies it. */
@@ -1427,8 +1556,7 @@ function detectTaskType(title){
 function isCellSelectable(r,i){
     if(!r) return false;
     const tt=TASK_TYPES[i];
-    const eligible=isRegressionReq(r)?!!tt.regression:!tt.regression;
-    if(!eligible) return false;
+    if(!ttEligibleFor(tt,reqCategory(r))) return false;
     if((existingTaskTypes[r.id]||_EMPTY_SET).has(i)) return false;
     return true;
 }
@@ -1532,6 +1660,9 @@ async function connectProject(){
 
         // Iteration dropdown (grouped, latest quarter first)
         buildIterSelect();
+        // Override the default selection with the team's CURRENT iteration
+        // (as configured globally in Azure DevOps), when one is available.
+        await applyDefaultCurrentIteration();
 
         // Mirror iterations to Tab 2's own iteration select — same grouped options and default as iterSelect (Tab 1)
         const tl2i=document.getElementById('tl2IterSel');
@@ -1608,7 +1739,6 @@ function buildIterSelect(){
     });
     if(!selectedIter&&recent[0]){selectedIter=recent[0].path;sel.value=recent[0].path;}
 }
-function selectIter(path){selectedIter=path;}
 
 /* ═══════════════════════════
    LOAD REQUIREMENTS
@@ -1617,6 +1747,8 @@ async function loadRequirements(opts){
     opts=opts||{};
     if(!selectedIter){showToast('❌ Select a sprint first','err');return;}
     const area=document.getElementById('areaSel').value;
+    if(!area){showToast('❌ Area Path is required — select an area first','err');return;}
+    reqPage=1;
     showLoading('Loading requirements…');
     try{
         const wiqlEsc=s=>s.replace(/^\\/,'').replace(/\\Iteration\\/i,'\\').replace(/\\Area\\/i,'\\').replace(/'/g,"''");
@@ -1656,6 +1788,11 @@ async function loadRequirements(opts){
             iter:w.fields['System.IterationPath']||'',area:w.fields['System.AreaPath']||'',
             tags:w.fields['System.Tags']||'',url:tfsUrl+'/_workitems/edit/'+w.id
         }));
+        // Skip items tagged "Engineering operations & Support"
+        const _beforeSkip=requirements.length;
+        requirements=requirements.filter(r=>!hasSkipTag(r.tags));
+        const _skipped=_beforeSkip-requirements.length;
+        if(_skipped) console.log('[TC] Skipped '+_skipped+' Engineering operations & Support item(s)');
         reqData={};reqMap={};
         requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};reqMap[r.id]=r;});
         document.getElementById('sprintPanel').style.display='none';
@@ -1669,8 +1806,13 @@ async function loadRequirements(opts){
         if(!opts.silent) document.getElementById('reqScreen').scrollIntoView({behavior:'smooth',block:'start'});
         showToast('✅ Loaded '+requirements.length+' requirements');
 
-        // Load members from sprint capacity for the selected area
-        loadMembersFromCapacity(selectedIter, area);
+        // Load tester details from sprint capacity ONCE per Sprint+Area selection.
+        // A silent reload after task creation reuses the cached list (see _membersKey).
+        const memKey=selectedIter+'|'+area;
+        if(_membersKey!==memKey || !memberList.length){
+            _membersKey=memKey;
+            loadMembersFromCapacity(selectedIter, area);
+        }
     }catch(e){showToast('❌ '+e.message,'err');}
     finally{hideLoading();}
 }
@@ -1741,24 +1883,33 @@ function renderExcel(){
 
     if(!filteredReqs.length){
         tbody.innerHTML='';empty.style.display='block';
-        updateSummary();return;
+        renderReqPager();updateSummary();return;
     }
     empty.style.display='none';
 
     // Build member options (area-filtered list) — values carry unique identity
     const memberOpts=memberOptionsHtml('');
 
-    tbody.innerHTML=filteredReqs.map((r,idx)=>{
+    // Pagination — render only the current page slice
+    const totalPages=Math.max(1,Math.ceil(filteredReqs.length/reqPageSize));
+    if(reqPage>totalPages) reqPage=totalPages;
+    if(reqPage<1) reqPage=1;
+    const pageStart=(reqPage-1)*reqPageSize;
+    const pageReqs=filteredReqs.slice(pageStart,pageStart+reqPageSize);
+    const nTesters=memberList.length;
+
+    tbody.innerHTML=pageReqs.map((r,idx)=>{
         // Each task type cell renders in one of three states:
         //   • BLANK    — task type doesn't match the requirement's regression state
         //   • EXISTS   — a task of this type already exists (open) this sprint → disabled
         //   • NORMAL   — selectable: checkbox + (when on) assignee + orig est
-        const isReg=isRegressionReq(r);
+        const cat=reqCategory(r);
+        const naMsg=cat==='alm'?'tagged ALM — only the ALM task applies':cat==='reg'?'tagged Regression, so only regression tasks apply':'not a Regression / ALM requirement';
         const existSet=existingTaskTypes[r.id]||_EMPTY_SET;
         const tcs=TASK_TYPES.map((tt,i)=>{
-            const eligible=isReg?!!tt.regression:!tt.regression;
+            const eligible=ttEligibleFor(tt,cat);
             if(!eligible){
-                return `<td class="tc tc-na" title="Not applicable — this requirement is ${isReg?'tagged Regression, so only regression tasks apply':'not a Regression requirement'}"><span class="tc-na-dash">▨</span></td>`;
+                return `<td class="tc tc-na" title="Not applicable — this requirement is ${naMsg}"><span class="tc-na-dash">▨</span></td>`;
             }
             if(existSet.has(i)){
                 return `<td class="tc tc-exists" title="A '${escAttr(tt.name)}' task already exists (open) in this sprint for requirement #${r.id}">
@@ -1768,31 +1919,48 @@ function renderExcel(){
                     </div>
                 </td>`;
             }
+            // Three cell layouts:
+            //   • testerPick (PT / Performance) → estimate + a per-cell tester picker
+            //   • perMember  (ALM)              → estimate + "× N testers" (auto all)
+            //   • normal                        → assignee dropdown + estimate
+            const perEa=(tt.testerPick||tt.perMember)?'/ea':'';
+            const estInp=`<input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h${perEa}" min="0" step="0.5"
+                        title="Original Estimate${perEa?' per tester':''} (hours)"
+                        onclick="event.stopPropagation()" onchange="setCellOe(${r.id},${i},this.value)">`;
+            let fieldsHtml;
+            if(tt.testerPick){
+                fieldsHtml=estInp+
+                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`;
+            }else if(tt.perMember){
+                fieldsHtml=estInp+
+                   `<div class="tc-permember" style="font-size:.52rem;color:${nTesters?'var(--acc)':'#f87171'};font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;"
+                        title="One task will be created per Test-discipline member from sprint capacity">${nTesters?('× '+nTesters+' tester'+(nTesters!==1?'s':'')):'no testers'}</div>`;
+            }else{
+                fieldsHtml=`<div class="mini-sel-wrap">
+                        <select class="mini-sel" id="at_${r.id}_${i}" onclick="event.stopPropagation()" onchange="setCellAt(${r.id},${i},this.value)" title="Assigned To">${memberOpts}</select>
+                   </div>`+estInp;
+            }
             return `<td class="tc" id="tc_${r.id}_${i}" onclick="toggleCell(${r.id},${i},event)">
             <div class="tc-inner">
                 <input type="checkbox" class="tc-cb" id="cb_${r.id}_${i}"
                     onclick="event.stopPropagation()" onchange="onCellChange(${r.id},${i})">
                 <div class="tc-fields" id="tcf_${r.id}_${i}">
-                    <div class="mini-sel-wrap">
-                        <select class="mini-sel" id="at_${r.id}_${i}" onclick="event.stopPropagation()" title="Assigned To">${memberOpts}</select>
-                    </div>
-                    <input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h" min="0" step="0.5"
-                        title="Original Estimate (hours)"
-                        onclick="event.stopPropagation()" onchange="updateSummary()">
+                    ${fieldsHtml}
                 </div>
             </div>
         </td>`;
         }).join('');
         return `<tr id="row_${r.id}">
-            <td class="cell-num c-num col-sticky" style="left:0;">${idx+1}</td>
+            <td class="cell-num c-num col-sticky" style="left:0;">${pageStart+idx+1}</td>
             <td class="cell-id c-id col-sticky" style="left:36px;"><a href="${r.url}" target="_blank">#${r.id}</a></td>
             <td class="cell-title c-title col-sticky" style="left:94px;" title="${escHtml(r.title)}">${escHtml(r.title)}</td>
             ${tcs}
         </tr>`;
     }).join('');
 
-    // Restore checked state
-    filteredReqs.forEach(r=>syncRow(r.id));
+    // Restore checked state (current page only)
+    pageReqs.forEach(r=>syncRow(r.id));
+    renderReqPager();
     updateSummary();
 }
 
@@ -1813,14 +1981,106 @@ function onCellChange(reqId,i){
     cell.classList.toggle('on',cb.checked);
     updateSummary();
 }
+/* Persist per-cell assignee / estimate into reqData so selections survive page
+   changes (off-page cells have no DOM inputs). */
+function setCellAt(reqId,i,val){
+    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+    reqData[reqId].at[i]=val;
+}
+function setCellOe(reqId,i,val){
+    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+    reqData[reqId].oe[i]=val;
+    updateSummary();
+}
+
+/* ── PER-CELL TESTER PICKER (PT Regression / Performance Testing) ──
+   The chosen testers for a testerPick cell live on reqData[reqId].testers[i]
+   (a Set of member "value" strings). Defaults to ALL current members. */
+function getCellTesters(reqId,i){
+    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{},testers:{}};
+    if(!reqData[reqId].testers) reqData[reqId].testers={};
+    if(!(i in reqData[reqId].testers)) reqData[reqId].testers[i]=new Set(memberList.map(m=>m.value));
+    return reqData[reqId].testers[i];
+}
+/* Member values that will actually receive a task for this cell. */
+function effectiveTesters(reqId,i,tt){
+    if(tt.perMember) return memberList.map(m=>m.value);            // ALM → all members
+    if(tt.testerPick){
+        const rd=reqData[reqId];
+        if(rd&&rd.testers&&rd.testers[i]) return [...rd.testers[i]].filter(v=>memberList.some(m=>m.value===v));
+        return memberList.map(m=>m.value);                        // default: all
+    }
+    return null;
+}
+/* Selected-tester count without creating a default set (read-only). */
+function cellTesterCount(reqId,i){
+    const rd=reqData[reqId];
+    if(rd&&rd.testers&&rd.testers[i]) return [...rd.testers[i]].filter(v=>memberList.some(m=>m.value===v)).length;
+    return memberList.length;
+}
+function updateTesterBtn(reqId,i){
+    const el=document.getElementById('tbn_'+reqId+'_'+i);
+    if(el) el.textContent=cellTesterCount(reqId,i)+'/'+memberList.length;
+}
+function testerPopHtml(reqId,i){
+    if(!memberList.length) return '<div style="padding:8px 10px;color:#f87171;font-size:.64rem;">No testers loaded</div>';
+    const sel=getCellTesters(reqId,i);
+    const allOn=memberList.every(m=>sel.has(m.value));
+    return '<label class="tester-item select-all"><input type="checkbox" '+(allOn?'checked':'')+' onchange="toggleAllTesters('+reqId+','+i+',this.checked)"> Select All</label>'+
+        memberList.map(m=>'<label class="tester-item"><input type="checkbox" value="'+escAttr(m.value)+'" '+(sel.has(m.value)?'checked':'')+' onchange="onTesterToggle('+reqId+','+i+',this.value,this.checked)"> '+escHtml(m.name)+'</label>').join('');
+}
+let _testerPop={reqId:null,i:null};
+function openTesterPop(reqId,i,ev){
+    if(ev) ev.stopPropagation();
+    const pop=document.getElementById('testerPop');
+    if(_testerPop.reqId===reqId&&_testerPop.i===i&&pop.style.display==='block'){ closeTesterPop(); return; }
+    _testerPop={reqId,i};
+    pop.innerHTML=testerPopHtml(reqId,i);
+    const btn=document.getElementById('tb_'+reqId+'_'+i);
+    const r=btn.getBoundingClientRect();
+    const pw=210;
+    let left=r.left; if(left+pw>window.innerWidth-8) left=window.innerWidth-pw-8; if(left<8) left=8;
+    let top=r.bottom+4; if(top+240>window.innerHeight) top=Math.max(8,r.top-244);
+    pop.style.left=left+'px'; pop.style.top=top+'px'; pop.style.width=pw+'px'; pop.style.display='block';
+}
+function closeTesterPop(){const pop=document.getElementById('testerPop');if(pop)pop.style.display='none';_testerPop={reqId:null,i:null};}
+function onTesterToggle(reqId,i,val,ch){
+    const s=getCellTesters(reqId,i);
+    ch?s.add(val):s.delete(val);
+    const pop=document.getElementById('testerPop');
+    const sa=pop&&pop.querySelector('.select-all input');
+    if(sa) sa.checked=memberList.every(m=>s.has(m.value));
+    updateTesterBtn(reqId,i); updateSummary();
+}
+function toggleAllTesters(reqId,i,ch){
+    const s=getCellTesters(reqId,i);
+    s.clear(); if(ch) memberList.forEach(m=>s.add(m.value));
+    const pop=document.getElementById('testerPop');
+    if(pop&&_testerPop.reqId===reqId&&_testerPop.i===i) pop.innerHTML=testerPopHtml(reqId,i);
+    updateTesterBtn(reqId,i); updateSummary();
+}
+document.addEventListener('click',function(e){
+    const pop=document.getElementById('testerPop');
+    if(!pop||pop.style.display!=='block') return;
+    if(pop.contains(e.target)) return;
+    if(e.target.closest&&e.target.closest('.tc-testers-btn')) return;
+    closeTesterPop();
+});
 function syncRow(reqId){
-    const sel=(reqData[reqId]||{sel:new Set()}).sel;
+    const rd=reqData[reqId]||{sel:new Set(),at:{},oe:{}};
+    const sel=rd.sel;
     TASK_TYPES.forEach((_,i)=>{
         const cb=document.getElementById('cb_'+reqId+'_'+i);
         const cell=document.getElementById('tc_'+reqId+'_'+i);
         if(!cb||!cell) return;
         cb.checked=sel.has(i);
         cell.classList.toggle('on',sel.has(i));
+        // Restore stored assignee / estimate for this rendered cell
+        const at=document.getElementById('at_'+reqId+'_'+i);
+        if(at && rd.at && rd.at[i]!=null) at.value=rd.at[i];
+        const oe=document.getElementById('oe_'+reqId+'_'+i);
+        if(oe && rd.oe && rd.oe[i]!=null) oe.value=rd.oe[i];
+        if(document.getElementById('tb_'+reqId+'_'+i)) updateTesterBtn(reqId,i);
     });
 }
 function globalAll(state){
@@ -1843,11 +2103,52 @@ function globalTT(disc){
     updateSummary();
 }
 function updateSummary(){
-    const reqs=filteredReqs.filter(r=>(reqData[r.id]||{sel:new Set()}).sel.size>0);
-    const tasks=filteredReqs.reduce((s,r)=>s+((reqData[r.id]||{sel:new Set()}).sel.size),0);
-    document.getElementById('smReqs').textContent=reqs.length;
-    document.getElementById('smTasks').textContent=tasks;
+    let reqCount=0,taskCount=0;
+    filteredReqs.forEach(r=>{
+        const sel=(reqData[r.id]||{sel:new Set()}).sel;
+        if(sel.size>0) reqCount++;
+        sel.forEach(i=>{
+            const tt=TASK_TYPES[i]; if(!tt) return;
+            if(tt.perMember||tt.testerPick){
+                const n=effectiveTesters(r.id,i,tt).length;
+                taskCount += n || (memberList.length?0:1);   // fallback: 1 unassigned when no testers loaded
+            } else taskCount += 1;
+        });
+    });
+    document.getElementById('smReqs').textContent=reqCount;
+    document.getElementById('smTasks').textContent=taskCount;
 }
+
+/* ═══════════════════════════
+   PAGINATION (shared)
+═══════════════════════════ */
+/* Build pagination controls. `prefix` maps to {prefix}GoPage / {prefix}SetPageSize. */
+function pagerHtml(prefix,total,page,pageSize){
+    const totalPages=Math.max(1,Math.ceil(total/pageSize));
+    page=Math.min(Math.max(1,page),totalPages);
+    const start=total?((page-1)*pageSize+1):0;
+    const end=Math.min(page*pageSize,total);
+    const opts=[5,10,20,40,50].map(s=>`<option value="${s}"${s===pageSize?' selected':''}>${s}</option>`).join('');
+    return `<div class="pager-inner">
+        <div class="pager-size"><span>Rows</span>
+            <select onchange="${prefix}SetPageSize(this.value)">${opts}</select>
+            <span>per page</span></div>
+        <div class="pager-info">${total?('Showing '+start+'–'+end+' of '+total):'No records'}</div>
+        <div class="pager-nav">
+            <button class="btn btn-ghost btn-xs" ${page<=1?'disabled':''} onclick="${prefix}GoPage(1)" title="First">«</button>
+            <button class="btn btn-ghost btn-xs" ${page<=1?'disabled':''} onclick="${prefix}GoPage(${page-1})" title="Previous">‹</button>
+            <span class="pager-page">Page ${page} / ${totalPages}</span>
+            <button class="btn btn-ghost btn-xs" ${page>=totalPages?'disabled':''} onclick="${prefix}GoPage(${page+1})" title="Next">›</button>
+            <button class="btn btn-ghost btn-xs" ${page>=totalPages?'disabled':''} onclick="${prefix}GoPage(${totalPages})" title="Last">»</button>
+        </div>
+    </div>`;
+}
+function renderReqPager(){
+    const el=document.getElementById('reqPager');
+    if(el) el.innerHTML=filteredReqs.length?pagerHtml('req',filteredReqs.length,reqPage,reqPageSize):'';
+}
+function reqGoPage(p){reqPage=p;renderExcel();const w=document.querySelector('.excel-wrap');if(w)w.scrollTop=0;}
+function reqSetPageSize(v){reqPageSize=parseInt(v)||20;reqPage=1;renderExcel();}
 
 /* ═══════════════════════════
    AREA MEMBERS
@@ -1960,8 +2261,9 @@ async function loadMembersFromCapacity(iterPath, areaPath){
 }
 
 function onAreaChange(areaPath){
-    // Members refreshed when Load Requirements is clicked
-    memberList=[];
+    // Changing the area invalidates any loaded requirements + cached testers;
+    // members are re-fetched (once) on the next Load Requirements.
+    resetLoadedReqs();
 }
 
 /* ═══════════════════════════
@@ -1979,7 +2281,7 @@ function onPreviewAssignee(n){
     if(!t) return;
     const sel=document.getElementById('pa_'+n);
     t.assignedTo=sel?sel.value:'';
-    if(t.regression){
+    if(t.regression||t.alm){
         const ti=document.getElementById('pt_'+n);
         if(ti && ti.dataset.auto!=='0'){ ti.value=ttTitleForTask(t); }
     }
@@ -1989,21 +2291,33 @@ function generateAllTasks(){
     const toProcess=filteredReqs.filter(r=>(reqData[r.id]||{sel:new Set()}).sel.size>0);
     if(!toProcess.length){showToast('❌ No tasks selected','err');return;}
 
-    // Collect preview data
+    // Collect preview data. Values come from reqData (persisted across pages),
+    // falling back to the DOM inputs for the currently-rendered page.
     _pendingTasks=[];
     for(const req of toProcess){
         const selIdx=[...(reqData[req.id]||{sel:new Set()}).sel];
+        const rd=reqData[req.id]||{at:{},oe:{}};
         for(const i of selIdx){
             if(!isCellSelectable(req,i)) continue;   // guard: skip gated / already-existing types
             const tt=TASK_TYPES[i];
-            const assignedTo=(document.getElementById('at_'+req.id+'_'+i)||{}).value||'';
-            const origEst=parseFloat((document.getElementById('oe_'+req.id+'_'+i)||{}).value)||0;
-            _pendingTasks.push({
+            const rawAt=(rd.at&&rd.at[i]!=null)?rd.at[i]:((document.getElementById('at_'+req.id+'_'+i)||{}).value||'');
+            const rawOe=(rd.oe&&rd.oe[i]!=null)?rd.oe[i]:((document.getElementById('oe_'+req.id+'_'+i)||{}).value||'');
+            const origEst=parseFloat(rawOe)||0;
+            const base={
                 reqId:req.id, reqTitle:req.title, reqIter:req.iter, reqArea:req.area,
-                ttIdx:i, ttName:tt.name, disc:tt.disc, regression:!!tt.regression, execType:ttExecType(tt),
-                assignedTo, origEst,
+                ttIdx:i, ttName:tt.name, disc:tt.disc, regression:!!tt.regression, alm:!!tt.alm, execType:ttExecType(tt),
+                origEst,
                 remWork:origEst,   // Remaining = Original Estimate
-            });
+            };
+            if(tt.perMember||tt.testerPick){
+                // One task per selected/auto Test-discipline member from sprint capacity
+                const testers=effectiveTesters(req.id,i,tt);
+                if(testers.length){ testers.forEach(v=>_pendingTasks.push({...base, assignedTo:v})); }
+                else if(!memberList.length){ _pendingTasks.push({...base, assignedTo:''}); }
+                // else: members loaded but user selected none → skip this cell
+            }else{
+                _pendingTasks.push({...base, assignedTo:rawAt||''});
+            }
         }
     }
 
@@ -2092,35 +2406,50 @@ async function confirmGenerate(){
     const banner=document.getElementById('successBanner');
     banner.classList.remove('vis');
 
-    let totalOk=0, totalFail=0;
-
-    for(const t of _pendingTasks){
-        try{
-            const body=[
-                {op:'add',path:'/fields/System.Title',                    value:t.customTitle},
-                {op:'add',path:'/fields/System.IterationPath',             value:t.reqIter},
-                {op:'add',path:'/fields/System.AreaPath',                  value:t.reqArea},
-                {op:'add',path:'/fields/Microsoft.VSTS.Common.Discipline', value:t.disc},
-                {op:'add',path:'/fields/System.Tags',                      value:ttTags(t)},
-            ];
-            if(EXEC_TYPE_FIELD) body.push({op:'add',path:'/fields/'+EXEC_TYPE_FIELD,value:t.execType});
-            if(t.assignedTo) body.push({op:'add',path:'/fields/System.AssignedTo',value:t.assignedTo});
-            if(t.origEst)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.OriginalEstimate',value:t.origEst});
-            if(t.remWork)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.RemainingWork',   value:t.remWork});
-            body.push({op:'add',path:'/relations/-',value:{rel:'System.LinkTypes.Hierarchy-Reverse',url:tfsUrl+'/_apis/wit/workitems/'+t.reqId}});
-
-            const res=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/workitems/$Task?api-version=5.0',
-                {method:'POST',headers:{...hdrs,'Content-Type':'application/json-patch+json'},body:JSON.stringify(body)});
-            if(!res.ok){const tx=await res.text();throw new Error('HTTP '+res.status+': '+tx.substring(0,100));}
-            const rd2=await res.json();
-            totalOk++;
-            addLog(logEl,'✅ <a href="'+tfsUrl+'/_workitems/edit/'+rd2.id+'" target="_blank" style="color:#34d399;">#'+rd2.id+'</a> — <em>'+escHtml(t.customTitle)+'</em>','ok');
-        }catch(e){
-            totalFail++;
-            addLog(logEl,'❌ <em>'+escHtml(t.customTitle)+'</em> → Req #'+t.reqId+': '+escHtml(e.message),'err');
-        }
+    // Build the JSON-patch body + POST a single Task; resolves to the created item.
+    async function createOneTask(t){
+        const body=[
+            {op:'add',path:'/fields/System.Title',                    value:t.customTitle},
+            {op:'add',path:'/fields/System.IterationPath',             value:t.reqIter},
+            {op:'add',path:'/fields/System.AreaPath',                  value:t.reqArea},
+            {op:'add',path:'/fields/Microsoft.VSTS.Common.Discipline', value:t.disc},
+            {op:'add',path:'/fields/System.Tags',                      value:ttTags(t)},
+        ];
+        if(EXEC_TYPE_FIELD) body.push({op:'add',path:'/fields/'+EXEC_TYPE_FIELD,value:t.execType});
+        if(t.assignedTo) body.push({op:'add',path:'/fields/System.AssignedTo',value:t.assignedTo});
+        if(t.origEst)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.OriginalEstimate',value:t.origEst});
+        if(t.remWork)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.RemainingWork',   value:t.remWork});
+        body.push({op:'add',path:'/relations/-',value:{rel:'System.LinkTypes.Hierarchy-Reverse',url:tfsUrl+'/_apis/wit/workitems/'+t.reqId}});
+        const res=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/workitems/$Task?api-version=5.0',
+            {method:'POST',headers:{...hdrs,'Content-Type':'application/json-patch+json'},body:JSON.stringify(body)});
+        if(!res.ok){const tx=await res.text();throw new Error('HTTP '+res.status+': '+tx.substring(0,100));}
+        return await res.json();
     }
 
+    // Process in batches so Azure DevOps isn't overwhelmed; loader + log give a live feed.
+    const BATCH_SIZE=5;
+    const total=_pendingTasks.length;
+    const batchCount=Math.ceil(total/BATCH_SIZE);
+    let totalOk=0, totalFail=0, processed=0;
+    showGenLoader(total);
+
+    for(let b=0;b<total;b+=BATCH_SIZE){
+        const slice=_pendingTasks.slice(b,b+BATCH_SIZE);
+        const batchNo=Math.floor(b/BATCH_SIZE)+1;
+        updateGenLoader(processed,total,'Creating batch '+batchNo+' of '+batchCount+'…');
+        const results=await Promise.all(slice.map(t=>
+            createOneTask(t).then(rd2=>({ok:true,t,id:rd2.id})).catch(e=>({ok:false,t,err:e.message}))
+        ));
+        results.forEach(r=>{
+            processed++;
+            if(r.ok){ totalOk++; addLog(logEl,'✅ <a href="'+tfsUrl+'/_workitems/edit/'+r.id+'" target="_blank" style="color:#34d399;">#'+r.id+'</a> — <em>'+escHtml(r.t.customTitle)+'</em>','ok'); }
+            else{ totalFail++; addLog(logEl,'❌ <em>'+escHtml(r.t.customTitle)+'</em> → Req #'+r.t.reqId+': '+escHtml(r.err),'err'); }
+        });
+        updateGenLoader(processed,total,'Created '+totalOk+' · '+totalFail+' failed — batch '+batchNo+'/'+batchCount);
+        if(b+BATCH_SIZE<total) await new Promise(res=>setTimeout(res,150));   // brief pause between batches
+    }
+
+    hideGenLoader();
     addLog(logEl,'── Done: '+totalOk+' created, '+totalFail+' failed ──',totalFail>0?'warn':'info');
 
     // Success / partial banner
@@ -2153,6 +2482,24 @@ function addLog(el,msg,type){
     el.appendChild(d);el.scrollTop=el.scrollHeight;
 }
 
+/* ── GENERATION LOADER (inline, non-blocking so the live log stays visible) ── */
+function showGenLoader(total){
+    const l=document.getElementById('genLoader'); if(!l) return;
+    l.classList.add('vis');
+    updateGenLoader(0,total,'Preparing '+total+' task'+(total!==1?'s':'')+'…');
+    l.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function updateGenLoader(done,total,label){
+    const txt=document.getElementById('genLoaderTxt');
+    const sub=document.getElementById('genLoaderSub');
+    const bar=document.getElementById('genLoaderBar');
+    const pct=total?Math.round(done/total*100):0;
+    if(txt) txt.textContent=label||('Creating tasks… '+done+'/'+total);
+    if(sub) sub.textContent=done+' of '+total+' processed · '+pct+'%';
+    if(bar) bar.style.width=pct+'%';
+}
+function hideGenLoader(){const l=document.getElementById('genLoader');if(l)l.classList.remove('vis');}
+
 /* ═══════════════════════════
    FILTER
 ═══════════════════════════ */
@@ -2163,10 +2510,7 @@ function applyReqFilters(){
     const delivSel=getSelectedDeliv();   // null = no filter (all / none selected)
     filteredReqs=requirements.filter(r=>{
         if(q && !(r.title.toLowerCase().includes(q)||String(r.id).includes(q))) return false;
-        if(delivSel){
-            const tags=String(r.tags||'').split(';').map(t=>t.trim().toLowerCase());
-            if(!delivSel.some(sel=>tags.includes(sel.toLowerCase()))) return false;
-        }
+        if(delivSel && !reqMatchesDeliv(r,delivSel)) return false;
         return true;
     });
     renderExcel();
@@ -2211,6 +2555,16 @@ function updateDelivLabel(){
     const btn=document.getElementById('delivMsBtn'); if(!btn) return;
     if(checked.length===all.length||checked.length===0){ btn.textContent='All Deliverable Types'; }
     else{ btn.textContent=checked.map(cb=>cb.value==='Deliverables Adhoc'?'Adhoc':cb.value).join(', '); }
+}
+/* Does a requirement match the selected deliverable-type filters?
+   Regular values match a whole tag (case-insensitive). The special "Misc" value
+   matches requirements tagged ALM OR Regression. */
+function reqMatchesDeliv(r,delivSel){
+    const tags=String((r&&r.tags)||'').split(';').map(t=>t.trim().toLowerCase());
+    return delivSel.some(sel=>{
+        if(sel==='Misc') return tags.includes('alm')||tags.includes('regression');
+        return tags.includes(String(sel).toLowerCase());
+    });
 }
 /* Returns array of exact tag strings to match, or null for "no filter" (all/none). */
 function getSelectedDeliv(){
@@ -2295,6 +2649,7 @@ function getSelectedAreas(){
 let allTasks=[], filteredTasks=[];
 // parentMap: taskId → {reqId, reqTitle, reqUrl, featId, featTitle, featUrl}
 let taskParentInfo={};
+let tlPage=1, tlPageSize=20;   // Task List pagination
 
 async function loadTaskList(){
     // Use Tab 2's own selects (populated when project connects)
@@ -2454,6 +2809,7 @@ async function loadTaskList(){
         }
 
         filteredTasks=[...allTasks];
+        tlPage=1;
 
         // Populate iteration filter — option value = full path, label = last segment
         const iterSet=new Set(allTasks.map(t=>t.iter).filter(Boolean));
@@ -2479,15 +2835,22 @@ function renderTaskList(){
     if(idle) idle.style.display='none';
     if(!filteredTasks.length){tbody.innerHTML='';tfoot.style.display='none';empty.style.display='block';
         ['tlCount','tlOrigEst','tlRemWork','tlCompWork'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='0'+(id!=='tlCount'?'h':'');});
+        renderTlPager();
         return;
     }
     empty.style.display='none';
     const discCls={'Development':'dp-dev','Test':'dp-test','User Experience':'dp-ux','Analysis':'dp-ana'};
     const stateCls={Active:'sps-active',Closed:'sps-closed',Resolved:'sps-resolved'};
 
+    // Totals span ALL filtered tasks; only the current page is rendered as rows.
     let sumOrig=0,sumRem=0,sumComp=0;
-    tbody.innerHTML=filteredTasks.map(t=>{
-        sumOrig+=t.origEst;sumRem+=t.remWork;sumComp+=t.compWork;
+    filteredTasks.forEach(t=>{sumOrig+=t.origEst;sumRem+=t.remWork;sumComp+=t.compWork;});
+    const totalPages=Math.max(1,Math.ceil(filteredTasks.length/tlPageSize));
+    if(tlPage>totalPages)tlPage=totalPages; if(tlPage<1)tlPage=1;
+    const tlStart=(tlPage-1)*tlPageSize;
+    const pageTasks=filteredTasks.slice(tlStart,tlStart+tlPageSize);
+
+    tbody.innerHTML=pageTasks.map(t=>{
         const dc=discCls[t.disc]||'dp-oth';
         const sc=stateCls[t.state]||'sps-other';
         const discHtml=t.disc?`<span class="disc-pill ${dc}">${escHtml(t.disc)}</span>`:'<span style="color:var(--td);">—</span>';
@@ -2530,7 +2893,15 @@ function renderTaskList(){
     document.getElementById('tlOrigEst').textContent=fmt(sumOrig)+'h';
     document.getElementById('tlRemWork').textContent=fmt(sumRem)+'h';
     document.getElementById('tlCompWork').textContent=fmt(sumComp)+'h';
+
+    renderTlPager();
 }
+function renderTlPager(){
+    const el=document.getElementById('tlPager');
+    if(el) el.innerHTML=filteredTasks.length?pagerHtml('tl',filteredTasks.length,tlPage,tlPageSize):'';
+}
+function tlGoPage(p){tlPage=p;renderTaskList();const w=document.querySelector('.task-tbl-wrap');if(w)w.scrollTop=0;}
+function tlSetPageSize(v){tlPageSize=parseInt(v)||20;tlPage=1;renderTaskList();}
 
 function filterTaskList(){
     const q=document.getElementById('taskSearch')?.value.trim().toLowerCase()||'';
@@ -2548,6 +2919,7 @@ function filterTaskList(){
         }
         return true;
     });
+    tlPage=1;
     renderTaskList();
 }
 
@@ -2560,6 +2932,7 @@ function filterTaskList(){
 // Sprint Tracker state
 var stData=null, stCapData={}, stTeamDaysOff=[], stAllItemsMap={}, stCurSub='summary';
 var ST_PROJ='', ST_TEAM='', ST_ITER='';
+var stSumPage=1, stSumPageSize=20;   // Sprint Tracker summary pagination
 
 // Column config
 var stColsDef=[
@@ -2841,7 +3214,7 @@ function stShowDash(){
         {l:'Completed',v:tC.toFixed(1)+'h',c:'#34d399'},
         {l:'Remaining',v:tR.toFixed(1)+'h',c:'#fbbf24'}
     ].map(function(s){return'<div class="st-stat-card"><div class="st-stat-val" style="color:'+s.c+'">'+stEsc(s.v)+'</div><div class="st-stat-lbl">'+stEsc(s.l)+'</div></div>';}).join('');
-    stRSum(); stRDaily(); stSwSub(stCurSub); stUpdateColBadge();
+    stSumPage=1; stRSum(); stRDaily(); stSwSub(stCurSub); stUpdateColBadge();
 }
 
 function stUpdateColBadge(){
@@ -2855,7 +3228,13 @@ function stColRender(col,t){
 
 function stRSum(){
     var d=stData, visCols=stCols.filter(function(c){return c.vis;}), h='';
-    d.assignees.forEach(function(a,idx){
+    var all=d.assignees||[];
+    var totalPages=Math.max(1,Math.ceil(all.length/stSumPageSize));
+    if(stSumPage>totalPages)stSumPage=totalPages; if(stSumPage<1)stSumPage=1;
+    var stStart=(stSumPage-1)*stSumPageSize;
+    var pageA=all.slice(stStart,stStart+stSumPageSize);
+    pageA.forEach(function(a,localIdx){
+        var idx=stStart+localIdx;   // global index — onclick handlers reference stData.assignees[idx]
         var hue=idx*47, in2=stIni(a.name), p=stPct(a.totalCompleted,a.totalOriginal);
         var rows='', tblId='stTbl_'+idx;
         var thRow=visCols.map(function(c){return'<th'+(c.wide?' style="min-width:180px"':'')+'>'+stEsc(c.label)+'</th>';}).join('');
@@ -2878,8 +3257,12 @@ function stRSum(){
             '<table id="'+tblId+'" style="width:100%;border-collapse:collapse;font-size:.7rem;">'+
             '<thead><tr>'+thRow+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
     });
-    document.getElementById('stSummaryView').innerHTML=h||'<div class="empty-state">No development/test tasks found.</div>';
+    var body=h||'<div class="empty-state">No development/test tasks found.</div>';
+    if(all.length) body+='<div class="pager" style="margin-top:12px;">'+pagerHtml('stSum',all.length,stSumPage,stSumPageSize)+'</div>';
+    document.getElementById('stSummaryView').innerHTML=body;
 }
+function stSumGoPage(p){stSumPage=p;stRSum();}
+function stSumSetPageSize(v){stSumPageSize=parseInt(v)||20;stSumPage=1;stRSum();}
 
 function stRDaily(){
     var d=stData, days=d.sprintDays||[], today=stTKey(), h='';
