@@ -1739,31 +1739,6 @@ function buildIterSelect(){
     });
     if(!selectedIter&&recent[0]){selectedIter=recent[0].path;sel.value=recent[0].path;}
 }
-function selectIter(path){
-    if(path!==selectedIter) resetLoadedReqs();
-    selectedIter=path;
-}
-
-/* Pre-select the team's CURRENT iteration (as set globally in Azure DevOps) in the
-   Sprint dropdown, overriding the latest-quarter fallback from buildIterSelect().
-   Uses the project's default team ($timeframe=current). Matches by iteration name
-   since team-settings paths differ from classification-node paths. */
-async function applyDefaultCurrentIteration(){
-    try{
-        const r=await fetch(tfsUrl+'/'+currentProject+'/_apis/work/teamsettings/iterations?$timeframe=current&api-version=5.0',{headers:hdrs});
-        if(!r.ok) return;
-        const cur=((await r.json()).value||[])[0];
-        if(!cur) return;
-        const sel=document.getElementById('iterSelect');
-        const opts=[...sel.querySelectorAll('option')];
-        const curName=(cur.name||'').trim();
-        const curLeaf=(cur.path||'').split('\\').pop().trim();
-        const m=opts.find(o=>o.textContent.trim()===curName)
-            ||(curLeaf&&opts.find(o=>o.value.split('\\').pop().trim()===curLeaf))
-            ||(curLeaf&&opts.find(o=>o.textContent.trim()===curLeaf));
-        if(m&&m.value){ sel.value=m.value; selectedIter=m.value; console.log('[TC] Default sprint → current iteration:',curName); }
-    }catch(e){ console.warn('[TC] applyDefaultCurrentIteration:',e.message); }
-}
 
 /* ═══════════════════════════
    LOAD REQUIREMENTS

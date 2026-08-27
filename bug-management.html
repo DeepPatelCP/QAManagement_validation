@@ -1188,7 +1188,7 @@ function testerOptionsHtml(bug,selectedVal){
 let tfsUrl='', hdrs=null, currentProject='', selectedIter='';
 let allIterations=[], allAreas=[], memberList=[];
 let bugs=[], filteredBugs=[];
-// bugData[bugId] = { sel:bool, tester:str, est:number }
+// bugData[bugId] = { sel:bool, tester:str, completed:number }  // hours logged as Completed Work
 let bugData={};
 let bugMap={};                // bugId -> bug object
 let existingRetest={};        // bugId -> count of OPEN Bug Retesting tasks (informational)
@@ -1433,7 +1433,7 @@ async function loadBugs(opts){
             };
         });
         bugData={};bugMap={};
-        bugs.forEach(b=>{bugData[b.id]={sel:false,tester:b.createdByValue||'',est:0};bugMap[b.id]=b;});
+        bugs.forEach(b=>{bugData[b.id]={sel:false,tester:b.createdByValue||'',completed:0};bugMap[b.id]=b;});
         document.getElementById('sprintPanel').style.display='none';
         document.getElementById('bugScreen').style.display='block';
         document.getElementById('bugCountBadge').textContent='— '+bugs.length+' resolved bug'+(bugs.length!==1?'s':'')+' loaded';
@@ -1657,7 +1657,7 @@ function renderBugGrid(){
     empty.style.display='none';
 
     tbody.innerHTML=filteredBugs.map((b,idx)=>{
-        const bd=bugData[b.id]||{sel:false,tester:b.createdByValue||'',est:0};
+        const bd=bugData[b.id]||{sel:false,tester:b.createdByValue||'',completed:0};
         const cnt=existingRetest[b.id]||0;
         const note=cnt>0
             ? `<span title="${cnt} open Bug Retesting task(s) already linked to this bug — you can still add another for a repeat retest" style="display:block;font-size:.5rem;color:#fbbf24;font-weight:700;margin-top:3px;white-space:nowrap;letter-spacing:.02em;">⟳ ${cnt} existing</span>`
@@ -1671,8 +1671,8 @@ function renderBugGrid(){
                         <div class="mini-sel-wrap">
                             <select class="mini-sel" id="tester_${b.id}" onclick="event.stopPropagation()" title="Tester">${testerOptionsHtml(b,bd.tester)}</select>
                         </div>
-                        <input class="mini-inp" type="number" id="est_${b.id}" placeholder="Est h" min="0" step="0.5"
-                            title="Original Estimate (hours)" value="${bd.est||''}"
+                        <input class="mini-inp" type="number" id="est_${b.id}" placeholder="Comp h" min="0" step="0.25"
+                            title="Completed Work (hours)" value="${bd.completed||''}"
                             onclick="event.stopPropagation()" onchange="onEstChange(${b.id})">
                     </div>
                 </div>
@@ -1706,17 +1706,17 @@ function onCellChange(bugId){
     const cb=document.getElementById('cb_'+bugId);
     if(!cb) return;   // exists / disabled rows have no checkbox
     const cell=document.getElementById('tc_'+bugId);
-    if(!bugData[bugId]) bugData[bugId]={sel:false,tester:(bugMap[bugId]||{}).createdByValue||'',est:0};
+    if(!bugData[bugId]) bugData[bugId]={sel:false,tester:(bugMap[bugId]||{}).createdByValue||'',completed:0};
     bugData[bugId].sel=cb.checked;
-    // persist tester/est currently in the inputs
+    // persist tester/completed-hours currently in the inputs
     const ts=document.getElementById('tester_'+bugId); if(ts) bugData[bugId].tester=ts.value;
-    const es=document.getElementById('est_'+bugId);    if(es) bugData[bugId].est=parseFloat(es.value)||0;
+    const es=document.getElementById('est_'+bugId);    if(es) bugData[bugId].completed=parseFloat(es.value)||0;
     if(cell) cell.classList.toggle('on',cb.checked);
     updateSummary();
 }
 function onEstChange(bugId){
     const es=document.getElementById('est_'+bugId);
-    if(bugData[bugId]&&es) bugData[bugId].est=parseFloat(es.value)||0;
+    if(bugData[bugId]&&es) bugData[bugId].completed=parseFloat(es.value)||0;
     updateSummary();
 }
 function syncRow(bugId){
@@ -1727,11 +1727,11 @@ function syncRow(bugId){
     cb.checked=!!bd.sel;
     cell.classList.toggle('on',!!bd.sel);
     const ts=document.getElementById('tester_'+bugId); if(ts&&bd.tester) ts.value=bd.tester;
-    const es=document.getElementById('est_'+bugId);    if(es&&bd.est)    es.value=bd.est;
+    const es=document.getElementById('est_'+bugId);    if(es&&bd.completed) es.value=bd.completed;
 }
 function selectAllBugs(state){
     filteredBugs.forEach(b=>{
-        if(!bugData[b.id]) bugData[b.id]={sel:false,tester:b.createdByValue||'',est:0};
+        if(!bugData[b.id]) bugData[b.id]={sel:false,tester:b.createdByValue||'',completed:0};
         bugData[b.id].sel = state ? isCellSelectable(b) : false;
         syncRow(b.id);
     });
@@ -1770,12 +1770,12 @@ function generateAllTasks(){
 
     _pendingTasks=toProcess.map(b=>{
         const bd=bugData[b.id]||{};
-        const est=parseFloat(bd.est)||0;
+        const comp=parseFloat(bd.completed)||0;
         return {
             bugId:b.id, bugTitle:b.title, bugArea:b.area,
             iterPath: currentIterationPath || b.iter,   // team's active sprint (fallback: bug's own)
             assignedTo:bd.tester||b.createdByValue||'',
-            origEst:est, remWork:est
+            completed:comp
         };
     });
 
@@ -1793,7 +1793,7 @@ function generateAllTasks(){
         '<td style="white-space:nowrap;">'+RETEST_TAGS.split(';').map(function(tg){return '<span class="tp tp-del" style="margin-right:3px;">'+escHtml(tg.trim())+'</span>';}).join('')+'</td>'+
         '<td style="white-space:nowrap;font-size:.68rem;color:var(--ts);">'+escHtml(RETEST_EXEC)+'</td>'+
         '<td><select class="pv-sel" id="pa_'+n+'">'+atOpts+'</select></td>'+
-        '<td><input class="pv-num" type="number" id="pe_'+n+'" value="'+(t.origEst||'')+'" placeholder="h" min="0" step="0.5"></td>'+
+        '<td><input class="pv-num" type="number" id="pe_'+n+'" value="'+(t.completed||'')+'" placeholder="h" min="0" step="0.25"></td>'+
         '<td style="width:110px;" title="'+escHtml(t.iterPath)+'">'+escHtml(iterShort)+'</td>'+
         '<td style="min-width:260px;"><input class="title-edit" type="text" id="pt_'+n+'" data-auto="1" oninput="markTitleEdited(this)" value="'+escAttr(defaultTitle)+'" title="Click to edit task title"></td>'+
         '</tr>';
@@ -1811,7 +1811,7 @@ function generateAllTasks(){
         '<th>Tags</th>'+
         '<th>Exec Type</th>'+
         '<th>Tester <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
-        '<th style="width:70px;">Orig Est <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
+        '<th style="width:70px;">Completed <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
         '<th style="width:110px;">Iteration</th>'+
         '<th>Task Title <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
         '</tr></thead>'+
@@ -1837,8 +1837,8 @@ async function confirmGenerate(){
         const estInp=document.getElementById('pe_'+n);
         if(atInp) t.assignedTo=atInp.value||'';
         t.customTitle=(titleInp?.value.trim())||retestTitle({id:t.bugId,title:t.bugTitle});
-        const est=parseFloat(estInp?.value);
-        if(!isNaN(est)&&est>=0){ t.origEst=est; t.remWork=est; }
+        const comp=parseFloat(estInp?.value);
+        if(!isNaN(comp)&&comp>=0){ t.completed=comp; }
     });
 
     closePreview();
@@ -1873,8 +1873,7 @@ async function confirmGenerate(){
             ];
             if(EXEC_TYPE_FIELD) body.push({op:'add',path:'/fields/'+EXEC_TYPE_FIELD,value:RETEST_EXEC});
             if(t.assignedTo) body.push({op:'add',path:'/fields/System.AssignedTo',value:t.assignedTo});
-            if(t.origEst)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.OriginalEstimate',value:t.origEst});
-            if(t.remWork)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.RemainingWork',   value:t.remWork});
+            if(t.completed)  body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.CompletedWork',value:t.completed});
             body.push({op:'add',path:'/relations/-',value:{rel:'System.LinkTypes.Hierarchy-Reverse',url:tfsUrl+'/_apis/wit/workitems/'+t.bugId}});
 
             const res=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/workitems/$Task?api-version=5.0',
