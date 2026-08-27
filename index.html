@@ -1018,6 +1018,7 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
     <button class="tab-btn active" id="tabBtn1" onclick="switchTab(1)">📝 Create Tasks</button>
     <button class="tab-btn" id="tabBtn2" onclick="switchTab(2)">📋 Task List</button>
     <button class="tab-btn" id="tabBtn4" onclick="switchTab(4)">🏃 Sprint Tracker</button>
+    <button class="tab-btn" id="tabBtnBug" onclick="location.href='bug-management.html'">🐞 Bug Management</button>
   </div>
 </div>
 
@@ -1504,6 +1505,7 @@ async function connectProject(){
     const sel=document.getElementById('projectSel');
     currentProject=sel?sel.value:'';
     if(!currentProject){showToast('❌ Select a project first','err');return;}
+    localStorage.setItem('tc_project',currentProject);
     showLoading('Connecting to '+currentProject+'…');
     try{
         const[ir,ar]=await Promise.all([

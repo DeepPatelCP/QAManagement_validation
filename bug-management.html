@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   DESIGN SYSTEM — COMMAND CENTER
+══════════════════════════════════════════ */
+:root {
+  --bg:       #04091c;
+  --bg2:      #080f28;
+  --bg3:      #04091c;
+  --surface:  rgba(12,24,58,0.72);
+  --glass:    rgba(255,255,255,0.04);
+  --glass2:   rgba(255,255,255,0.025);
+  --inp:      rgba(4,9,28,0.8);
+  --inp2:     rgba(8,15,40,0.6);
+  --b:        rgba(56,189,248,0.12);
+  --bs:       rgba(56,189,248,0.22);
+  --bfocus:   rgba(56,189,248,0.55);
+  --t:        #e2eeff;
+  --ts:       #c8d8f4;
+  --tm:       #6b82a8;
+  --td:       #3d5070;
+  --acc:      #38bdf8;
+  --acc2:     #818cf8;
+  --acc-glow: rgba(56,189,248,0.18);
+  --th-bg:    rgba(4,9,28,0.9);
+  --th-txt:   #4a6280;
+  --row-even: rgba(255,255,255,0.018);
+  --row-hover:rgba(56,189,248,0.055);
+  --cell-on:  rgba(56,189,248,0.14);
+  --cell-border:rgba(56,189,248,0.45);
+  --sh:       rgba(0,0,0,0.6);
+  --sh-accent:0 4px 28px rgba(56,189,248,0.12);
+  --topbar:   rgba(4,9,28,0.97);
+  --r-sm: 6px;
+  --r:    10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+}
+body.light {
+  --bg:       #f0f4fc;
+  --bg2:      #ffffff;
+  --bg3:      #e8eef8;
+  --surface:  rgba(255,255,255,0.95);
+  --glass:    rgba(255,255,255,0.90);
+  --glass2:   rgba(248,250,255,0.85);
+  --inp:      #ffffff;
+  --inp2:     #f4f7ff;
+  --b:        #d0ddf0;
+  --bs:       #adc0e0;
+  --bfocus:   #0284c7;
+  --t:        #0d1a30;
+  --ts:       #1a2e4a;
+  --tm:       #3d5578;
+  --td:       #7e99be;
+  --acc:      #0284c7;
+  --acc2:     #6366f1;
+  --acc-glow: rgba(2,132,199,0.10);
+  --th-bg:    #e4ecf8;
+  --th-txt:   #3d5578;
+  --row-even: rgba(0,0,0,0.018);
+  --row-hover:rgba(2,132,199,0.06);
+  --cell-on:  rgba(2,132,199,0.10);
+  --cell-border:rgba(2,132,199,0.45);
+  --sh:       rgba(15,30,60,0.08);
+  --sh-accent:0 4px 20px rgba(2,132,199,0.12);
+  --topbar:   rgba(255,255,255,0.98);
+}
+
+/* ── RESET + BASE ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--t);
+  min-height:100vh;
+  font-size:14px;
+  line-height:1.5;
+  transition:background .25s,color .25s;
+}
+
+/* Subtle grid pattern for dark mode */
+body::before{
+  content:'';
+  position:fixed;inset:0;z-index:-1;
+  background-image:
+    linear-gradient(rgba(56,189,248,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(56,189,248,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  pointer-events:none;
+}
+body.light::before{
+  background-image:
+    linear-gradient(rgba(0,0,0,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,0,0,0.03) 1px,transparent 1px);
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--topbar);
+  border-bottom:1px solid var(--b);
+  padding:10px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:300;
+  backdrop-filter:blur(16px);
+  box-shadow:0 1px 0 var(--b),0 4px 24px rgba(0,0,0,0.25);
+}
+.topbar-brand{
+  display:flex;align-items:center;gap:10px;
+}
+.topbar-icon{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,#38bdf8,#818cf8);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+  box-shadow:0 2px 12px rgba(56,189,248,0.35);
+}
+.topbar-title{
+  font-family:'Bricolage Grotesque',sans-serif;
+  font-size:.95rem;font-weight:700;
+  background:linear-gradient(135deg,#38bdf8 0%,#818cf8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-.01em;
+}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* ── THEME BUTTON ── */
+.theme-btn{
+  display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--r-pill);
+  border:1px solid var(--bs);background:var(--glass);color:var(--ts);
+  cursor:pointer;font-size:.7rem;font-weight:600;font-family:'DM Sans',sans-serif;
+  transition:all .2s;letter-spacing:.01em;
+}
+.theme-btn:hover{border-color:var(--acc);background:var(--acc-glow);color:var(--acc);}
+
+/* ── BADGES ── */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:var(--r-pill);
+  font-size:.65rem;font-weight:600;letter-spacing:.03em;
+  font-family:'DM Sans',sans-serif;
+}
+.b-ok  {background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.b-err {background:rgba(239,68,68,.12); color:#f87171;border:1px solid rgba(239,68,68,.25);}
+.b-info{background:rgba(56,189,248,.12);color:#7dd3fc;border:1px solid rgba(56,189,248,.25);}
+body.light .b-ok {color:#065f46;background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);}
+body.light .b-err{color:#991b1b;background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.25);}
+body.light .b-info{color:#0369a1;background:rgba(2,132,199,.08);border-color:rgba(2,132,199,.25);}
+
+/* ── TOPBAR light ── */
+body.light .topbar{box-shadow:0 1px 0 var(--b),0 2px 12px rgba(15,30,60,0.07);}
+
+/* ── PANEL light ── */
+body.light .panel{
+  background:#ffffff;
+  border-color:#d4dff2;
+  box-shadow:0 1px 6px rgba(15,30,60,0.07),0 4px 16px rgba(15,30,60,0.05);
+}
+body.light .panel:hover{border-color:#adc0e0;}
+body.light .panel-title{color:var(--acc);}
+body.light .panel-title::before{background:linear-gradient(180deg,#0284c7,#6366f1);}
+
+/* ── STEP LABEL light ── */
+body.light .step-lbl{color:#0284c7;background:rgba(2,132,199,.08);border-color:rgba(2,132,199,.2);}
+
+/* ── RECON BUTTON light ── */
+body.light .recon-btn{background:#f4f7ff;border-color:#d0ddf0;color:#3d5578;}
+body.light .recon-btn:hover{border-color:#0284c7;color:#0284c7;background:rgba(2,132,199,.06);}
+
+/* ── THEME BUTTON light ── */
+body.light .theme-btn{background:#ffffff;border-color:#d0ddf0;color:#3d5578;}
+body.light .theme-btn:hover{border-color:#0284c7;color:#0284c7;background:rgba(2,132,199,.06);}
+
+/* ── BUTTONS light ── */
+body.light .btn-primary{background:linear-gradient(135deg,#0284c7,#4f46e5);box-shadow:0 2px 10px rgba(2,132,199,0.25);}
+body.light .btn-primary:hover{box-shadow:0 4px 16px rgba(2,132,199,0.35);}
+body.light .btn-success{box-shadow:0 2px 10px rgba(16,185,129,0.2);}
+body.light .btn-ghost{background:#ffffff;border-color:#d0ddf0;color:#3d5578;}
+body.light .btn-ghost:hover{border-color:#0284c7;color:#0284c7;background:rgba(2,132,199,.05);}
+
+/* ── INPUTS light ── */
+body.light .field label{color:#3d5578;}
+body.light .field input,body.light .field select{
+  background:#ffffff;border-color:#d0ddf0;color:#0d1a30;
+  box-shadow:inset 0 1px 3px rgba(15,30,60,0.04);
+}
+body.light .field input:focus,body.light .field select:focus{
+  border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,0.12);
+}
+body.light .inline-sel{background:#ffffff;border-color:#d0ddf0;color:#0d1a30;}
+body.light .inline-sel:focus{border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,0.12);}
+body.light #iterSelect{background:#ffffff;border-color:#d0ddf0;color:#0d1a30;}
+body.light #iterSelect:focus{border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,0.12);}
+
+/* ── TOOLBAR light ── */
+body.light .tbl-toolbar{background:#f4f7ff;border-color:#d4dff2;}
+body.light .summary-stat{color:#3d5578;}
+body.light .summary-stat strong{color:#0284c7;}
+
+/* ── TAB BAR light ── */
+body.light .tab-bar{background:#edf2fc;border-color:#d4dff2;}
+body.light .tab-btn{color:#3d5578;}
+body.light .tab-btn:hover{color:#0d1a30;background:rgba(2,132,199,0.06);}
+body.light .tab-btn.active{color:#0284c7;background:#ffffff;box-shadow:0 1px 0 #0284c7;}
+
+/* ── SEARCH light ── */
+body.light .si-wrap input{background:#ffffff;border-color:#d0ddf0;color:#0d1a30;}
+body.light .si-wrap input:focus{border-color:#0284c7;box-shadow:0 0 0 3px rgba(2,132,199,0.12);}
+body.light .si-wrap::before{color:#7e99be;}
+
+/* ── CONNECTION STATUS BAR light ── */
+body.light .conn-stat-bar{background:#f4f7ff;border-color:#d4dff2;color:#3d5578;}
+body.light .conn-dot{background:#adc0e0;}
+body.light .conn-dot.ok{background:#059669;box-shadow:0 0 6px rgba(5,150,105,0.4);}
+body.light .conn-dot.err{background:#dc2626;box-shadow:0 0 6px rgba(220,38,38,0.3);}
+
+/* ── SECTION HEADERS light ── */
+body.light .sect-title{color:#0284c7;}
+body.light .sect-badge{color:#3d5578;}
+body.light .sect-ctx{color:#7e99be;}
+
+/* ── EXCEL TABLE light ── */
+body.light .excel-wrap{border-color:#d4dff2;}
+body.light .excel-tbl th,body.light .excel-tbl td{border-color:#dde7f4;}
+body.light .col-sticky{background:#ffffff;}
+body.light .excel-tbl thead tr:first-child th{background:#e4ecf8;color:#3d5578;}
+body.light .th-vert{background:#e4ecf8;}
+body.light .cell-id a{color:#0284c7;}
+body.light .cell-title{color:#1a2e4a;}
+body.light .cell-num{color:#7e99be;}
+body.light .tc:hover{background:rgba(2,132,199,.06) !important;}
+
+/* ── TASK TABLE light ── */
+body.light .task-tbl-wrap{border-color:#d4dff2;}
+body.light .task-tbl th{background:#e4ecf8;color:#3d5578;}
+body.light .task-tbl td{border-color:#dde7f4;color:#1a2e4a;}
+body.light .task-tbl tr:hover td{background:rgba(2,132,199,0.04);}
+body.light .wi-link{color:#0284c7;}
+
+/* ── IDLE STATE light ── */
+body.light #taskListIdle{background:#f8fbff;}
+body.light #taskListIdle div:nth-child(2){color:#3d5578;}
+body.light #taskListIdle div:nth-child(3){color:#7e99be;}
+
+/* ── GEN LOG light ── */
+body.light .gen-log{background:#f4f7ff;border-color:#d4dff2;}
+body.light .log-ok{color:#059669;}
+body.light .log-err{color:#dc2626;}
+body.light .log-info{color:#0369a1;}
+body.light .log-warn{color:#b45309;}
+
+/* ── SUCCESS BANNER light ── */
+body.light .success-banner{background:rgba(16,185,129,.08);border-color:rgba(16,185,129,.3);color:#065f46;}
+
+/* ── SPRINT TRACKER CARDS light ── */
+body.light .st-stat-card{background:#ffffff;border-color:#d4dff2;box-shadow:0 1px 4px rgba(15,30,60,0.06);}
+body.light .st-stat-card:hover{border-color:#adc0e0;box-shadow:0 4px 16px rgba(2,132,199,0.1);}
+body.light .st-stat-lbl{color:#3d5578;}
+body.light .st-assignee-card{background:#ffffff;border-color:#d4dff2;}
+body.light .st-assignee-card:hover{border-color:#adc0e0;}
+body.light .st-assignee-hdr:hover{background:rgba(2,132,199,0.04);}
+body.light .st-mini-prog{background:#e4ecf8;}
+body.light .st-export-btn{background:#f4f7ff;border-color:#d0ddf0;color:#3d5578;}
+body.light .st-export-btn:hover{border-color:#0284c7;color:#0284c7;}
+body.light .sub-tab{color:#3d5578;}
+body.light .sub-tab:hover{color:#0d1a30;background:rgba(2,132,199,.05);}
+body.light .sub-tab.active{color:#0284c7;background:#ffffff;}
+
+/* ── MODAL light ── */
+body.light .modal{background:#ffffff;border-color:#adc0e0;box-shadow:0 16px 48px rgba(15,30,60,0.14);}
+body.light .modal-title{color:#0284c7;}
+body.light .modal-close{color:#7e99be;}
+body.light .modal-close:hover{color:#0d1a30;}
+body.light .preview-tbl th{background:#e4ecf8;color:#3d5578;}
+body.light .preview-tbl td{border-color:#dde7f4;color:#1a2e4a;}
+body.light .preview-tbl tr:hover td{background:rgba(2,132,199,0.04);}
+body.light .preview-stat{color:#3d5578;}
+body.light .preview-stat strong{color:#0284c7;}
+body.light .modal-footer{border-color:#dde7f4;}
+body.light .title-edit{background:#f4f7ff;color:#0d1a30;}
+body.light .title-edit:hover{border-color:#d0ddf0;}
+body.light .title-edit:focus{border-color:#0284c7;background:#ffffff;}
+body.light .pv-sel{background:#f4f7ff;border-color:#d0ddf0;color:#0d1a30;}
+body.light .pv-sel:focus{border-color:#0284c7;}
+body.light .pv-num{background:#f4f7ff;border-color:#d0ddf0;color:#0d1a30;}
+body.light .pv-num:focus{border-color:#0284c7;}
+
+/* ── SPRINT LINK PREVIEW light ── */
+body.light #stLinkPreview{background:#f4f7ff;border-color:#d4dff2;color:#3d5578;}
+
+/* ── POPUP light ── */
+body.light #stPopupOverlay>div{background:#ffffff;border-color:#adc0e0;}
+body.light #stColCfgPanel{background:#ffffff;border-color:#d4dff2;}
+
+/* ── MINI CELLS light ── */
+body.light .mini-inp{background:#f4f7ff;border-color:#d0ddf0;color:#0d1a30;}
+body.light .mini-inp:focus{border-color:#0284c7;}
+body.light .mini-sel{background:#f4f7ff;border-color:#d0ddf0;color:#0d1a30;}
+body.light .mini-sel:focus{border-color:#0284c7;}
+
+/* ── EMPTY STATES light ── */
+body.light .empty-state{color:#7e99be;}
+
+/* ── LOADING OVERLAY light ── */
+body.light .loading-overlay{background:rgba(240,244,252,.92);}
+body.light .spinner{border-color:rgba(2,132,199,.15);border-top-color:#0284c7;box-shadow:0 0 12px rgba(2,132,199,.15);}
+body.light .loading-text{color:#0284c7;}
+
+/* ── TOAST light ── */
+body.light .toast{background:#ffffff;border-color:#adc0e0;color:#1a2e4a;box-shadow:0 8px 24px rgba(15,30,60,0.12);}
+
+/* ── PAT STATUS light ── */
+body.light #patStatus{background:#f4f7ff;border-color:#d4dff2;color:#3d5578;}
+
+/* ── PROJ CHIP light ── */
+body.light .proj-chip{background:rgba(2,132,199,.06);border-color:rgba(2,132,199,.18);color:#0284c7;}
+body.light .proj-chip:hover{background:rgba(2,132,199,.12);}
+body.light .proj-chip.sel{background:rgba(2,132,199,.14);border-color:#0284c7;}
+
+/* ── PROGRESS BAR light ── */
+body.light .prog-bar-track{background:#dde7f4;}
+body.light .prog-bar-fill{background:linear-gradient(90deg,#0284c7,#059669);}
+
+/* ── MULTISELECT DROPDOWN light ── */
+body.light .fp-multiselect-btn{background:#ffffff;border-color:#d0ddf0;color:#1a2e4a;}
+body.light .fp-multiselect-dropdown{background:#ffffff;border-color:#adc0e0;box-shadow:0 8px 24px rgba(15,30,60,0.12);}
+body.light .fp-multiselect-item{color:#1a2e4a;}
+body.light .fp-multiselect-item:hover{background:rgba(2,132,199,0.05);}
+body.light .fp-multiselect-item.select-all{border-color:#dde7f4;color:#0284c7;}
+
+/* ── MAIN LAYOUT ── */
+.main{padding:20px 24px;max-width:100%;margin:0 auto;}
+
+/* ── PANELS ── */
+.panel{
+  background:var(--surface);
+  border:1px solid var(--b);
+  border-radius:var(--r-lg);
+  padding:18px 20px;
+  margin-bottom:16px;
+  box-shadow:0 2px 16px var(--sh),inset 0 1px 0 rgba(255,255,255,.04);
+  backdrop-filter:blur(8px);
+  transition:border-color .2s;
+}
+.panel:hover{border-color:var(--bs);}
+.panel-title{
+  font-family:'Bricolage Grotesque',sans-serif;
+  font-size:.8rem;font-weight:700;
+  color:var(--acc);
+  margin-bottom:14px;
+  display:flex;align-items:center;gap:8px;
+  text-transform:uppercase;letter-spacing:.06em;
+}
+.panel-title::before{
+  content:'';display:inline-block;
+  width:3px;height:14px;border-radius:2px;
+  background:linear-gradient(180deg,var(--acc),var(--acc2));
+  flex-shrink:0;
+}
+.recon-btn{
+  margin-left:auto;font-size:.63rem;
+  background:var(--glass2);border:1px solid var(--b);
+  color:var(--tm);padding:3px 10px;border-radius:var(--r-sm);
+  cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.recon-btn:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-glow);}
+
+/* ── FORM FIELDS ── */
+.fg{display:grid;gap:14px;align-items:end;}
+.fg-3{grid-template-columns:1.5fr 1.4fr 1fr;}
+@media(max-width:820px){.fg-3{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{
+  font-size:.63rem;color:var(--tm);font-weight:600;
+  text-transform:uppercase;letter-spacing:.05em;
+}
+.field input,.field select{
+  width:100%;background:var(--inp);
+  border:1px solid var(--b);border-radius:var(--r);
+  padding:8px 12px;color:var(--t);font-size:.77rem;
+  font-family:'DM Sans',sans-serif;outline:none;
+  transition:border-color .2s,box-shadow .2s,background .2s;
+}
+.field input:focus,.field select:focus{
+  border-color:var(--bfocus);
+  box-shadow:0 0 0 3px var(--acc-glow);
+  background:var(--inp2);
+}
+.field input::placeholder{color:var(--td);}
+.field select option{background:var(--bg2);color:var(--t);}
+.pat-wrap{position:relative;}
+.pat-wrap input{padding-right:36px;}
+.pat-eye{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--tm);
+  font-size:.85rem;padding:2px;transition:color .2s;
+}
+.pat-eye:hover{color:var(--acc);}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:7px 16px;border-radius:var(--r);border:none;cursor:pointer;
+  font-size:.76rem;font-weight:600;font-family:'DM Sans',sans-serif;
+  transition:all .2s;white-space:nowrap;letter-spacing:.01em;
+}
+.btn-primary{
+  background:linear-gradient(135deg,#0ea5e9,#6366f1);
+  color:#fff;
+  box-shadow:0 2px 12px rgba(14,165,233,0.3);
+}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 4px 18px rgba(14,165,233,0.4);}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-success{
+  background:linear-gradient(135deg,#10b981,#059669);
+  color:#fff;padding:9px 24px;font-size:.82rem;
+  box-shadow:0 2px 12px rgba(16,185,129,0.3);
+}
+.btn-success:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 4px 18px rgba(16,185,129,0.35);}
+.btn-success:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-ghost{
+  background:var(--glass2);color:var(--ts);
+  border:1px solid var(--b);
+}
+.btn-ghost:hover{border-color:var(--acc);color:var(--acc);background:var(--acc-glow);}
+.btn-xs{padding:2px 8px;font-size:.6rem;border-radius:5px;}
+.btn-sm{padding:5px 12px;font-size:.7rem;}
+
+/* ── STEP LABEL ── */
+.step-lbl{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:'Space Mono',monospace;font-size:.6rem;font-weight:700;
+  color:var(--acc);letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 8px;border-radius:var(--r-pill);
+  background:var(--acc-glow);border:1px solid rgba(56,189,248,.25);
+  margin-right:6px;
+}
+
+/* ── PROJECT CHIPS ── */
+#projectList{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;}
+.proj-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:5px 13px;
+  border-radius:var(--r-pill);font-size:.7rem;font-weight:500;cursor:pointer;
+  background:rgba(56,189,248,.07);border:1.5px solid rgba(56,189,248,.15);
+  color:var(--acc);transition:all .15s;user-select:none;
+}
+.proj-chip:hover{background:rgba(56,189,248,.14);}
+.proj-chip.sel{background:rgba(56,189,248,.2);border-color:var(--acc);font-weight:700;}
+.proj-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0;}
+.proj-chip.sel .dot{background:#34d399;}
+
+/* ── ITERATION SELECT ── */
+#iterSelect{
+  width:100%;max-width:440px;background:var(--inp);
+  border:1px solid var(--b);border-radius:var(--r);
+  padding:8px 12px;color:var(--t);font-size:.77rem;
+  font-family:'DM Sans',sans-serif;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+#iterSelect:focus{border-color:var(--bfocus);box-shadow:0 0 0 3px var(--acc-glow);}
+#iterSelect optgroup{font-style:normal;font-weight:600;}
+#iterSelect option{background:var(--bg2);}
+
+/* ── SCREENS ── */
+#reqScreen{display:none;}
+
+/* ══════════════════════════════════════════
+   EXCEL TABLE
+══════════════════════════════════════════ */
+.excel-wrap{
+  overflow-x:auto;border-radius:var(--r);
+  border:1px solid var(--b);
+  box-shadow:0 4px 24px var(--sh);
+}
+.excel-wrap::-webkit-scrollbar{height:6px;width:6px;}
+.excel-wrap::-webkit-scrollbar-track{background:transparent;}
+.excel-wrap::-webkit-scrollbar-thumb{background:var(--bs);border-radius:3px;}
+.excel-tbl{border-collapse:collapse;font-size:.72rem;min-width:max-content;width:100%;}
+.excel-tbl th,.excel-tbl td{border:1px solid var(--b);padding:0;}
+.col-sticky{position:sticky;left:0;z-index:2;background:var(--bg2);}
+body.light .col-sticky{background:#ffffff;}
+
+/* fixed-width info cells */
+.excel-tbl td.c-num,.excel-tbl th.c-num{width:34px;min-width:34px;max-width:34px;}
+.excel-tbl td.c-id,.excel-tbl th.c-id{width:62px;min-width:62px;}
+.excel-tbl td.c-title,.excel-tbl th.c-title{width:180px;min-width:140px;max-width:200px;}
+.excel-tbl td.c-state,.excel-tbl th.c-state{width:76px;min-width:70px;}
+.excel-tbl td.c-tag,.excel-tbl th.c-tag{width:100px;min-width:80px;}
+.excel-tbl td.c-res,.excel-tbl th.c-res{width:90px;min-width:80px;}
+
+/* HEADER ROW */
+.excel-tbl thead tr:first-child th{
+  background:var(--th-bg);color:var(--th-txt);
+  font-family:'Space Mono',monospace;
+  font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:7px 5px;white-space:normal;top:0;position:sticky;z-index:3;
+}
+body.light .excel-tbl thead tr:first-child th{background:#e8eef8;color:#4a6280;}
+
+.th-vert{
+  width:62px;min-width:62px;max-width:80px;
+  height:auto;vertical-align:bottom;padding:7px 5px !important;
+  position:sticky;top:0;z-index:3;background:var(--th-bg);
+}
+body.light .th-vert{background:#e8eef8;}
+.th-vert-inner{
+  display:block;writing-mode:horizontal-tb;transform:none;
+  font-family:'Space Mono',monospace;
+  font-size:.54rem;font-weight:700;color:var(--th-txt);
+  text-transform:none;letter-spacing:0;
+  line-height:1.2;white-space:normal;word-break:break-word;text-align:center;
+}
+.th-vert.d-dev  .th-vert-inner{color:#7dd3fc;}
+.th-vert.d-test .th-vert-inner{color:#67e8f9;}
+.th-vert.d-ux   .th-vert-inner{color:#f9a8d4;}
+.th-vert.d-ana  .th-vert-inner{color:#fde68a;}
+body.light .th-vert.d-dev  .th-vert-inner{color:#0284c7;}
+body.light .th-vert.d-test .th-vert-inner{color:#0369a1;}
+body.light .th-vert.d-ux   .th-vert-inner{color:#be185d;}
+body.light .th-vert.d-ana  .th-vert-inner{color:#92400e;}
+
+/* DATA ROWS */
+.excel-tbl tbody tr:nth-child(even) td{background:var(--row-even);}
+.excel-tbl tbody tr:hover td{background:var(--row-hover);}
+.excel-tbl tbody td{vertical-align:middle;}
+
+/* info cell styles */
+.cell-num{text-align:center;color:var(--td);font-family:'Space Mono',monospace;font-size:.58rem;padding:0 4px !important;}
+.cell-id{padding:5px 7px !important;}
+.cell-id a{color:var(--acc);font-weight:700;text-decoration:none;font-family:'Space Mono',monospace;font-size:.68rem;}
+.cell-id a:hover{text-decoration:underline;}
+.cell-title{padding:5px 8px !important;color:var(--ts);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem;}
+.cell-state{padding:4px 6px !important;text-align:center;}
+.cell-tag{padding:4px 6px !important;}
+.cell-res{padding:4px 6px !important;text-align:center;}
+
+/* TASK TYPE CELL */
+.tc{
+  width:62px;min-width:62px;max-width:80px;
+  padding:8px 4px !important;text-align:center;vertical-align:top;
+  cursor:pointer;transition:background .15s ease, box-shadow .15s ease;
+  position:relative;overflow:visible !important;
+}
+.tc:hover{background:rgba(56,189,248,.08) !important;}
+.tc.on{background:var(--cell-on) !important;border-color:var(--cell-border) !important;box-shadow:inset 0 0 0 1px var(--cell-border);}
+.tc-inner{display:flex;flex-direction:column;align-items:center;gap:5px;padding:2px;}
+.tc-cb{
+  accent-color:var(--acc);width:17px;height:17px;cursor:pointer;flex-shrink:0;
+  border-radius:4px;transition:transform .12s ease, filter .12s ease;
+}
+.tc-cb:hover{transform:scale(1.12);}
+.tc.on .tc-cb{filter:drop-shadow(0 0 4px var(--acc-glow));}
+/* ── CELL STATES: not-applicable (gated by req tags) & already-exists ── */
+.tc.tc-na{cursor:default;background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--glass2) 5px,var(--glass2) 10px) !important;}
+.tc.tc-na:hover{background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--glass2) 5px,var(--glass2) 10px) !important;}
+.tc-na-dash{color:var(--td);font-size:.7rem;opacity:.5;}
+.tc.tc-exists{cursor:not-allowed;background:rgba(16,185,129,.06) !important;}
+.tc.tc-exists:hover{background:rgba(16,185,129,.08) !important;}
+.tc.tc-exists .tc-cb{opacity:.45;cursor:not-allowed;}
+.tc-exists-badge{display:block;font-size:.5rem;color:#34d399;font-weight:700;margin-top:3px;white-space:nowrap;letter-spacing:.02em;}
+body.light .tc.tc-exists{background:rgba(5,150,105,.07) !important;}
+.tc-fields{display:none;width:100%;margin-top:4px;}
+.tc.on .tc-fields{display:flex;flex-direction:column;gap:3px;}
+.mini-inp{
+  width:100%;background:var(--inp2);
+  border:1px solid var(--b);border-radius:5px;
+  padding:3px 5px;color:var(--t);font-size:.64rem;
+  font-family:'DM Sans',sans-serif;outline:none;text-align:center;
+  transition:border-color .12s ease;
+}
+.mini-inp:focus{border-color:var(--bfocus);}
+.mini-inp::placeholder{color:var(--td);font-size:.58rem;}
+
+.mini-sel-wrap{position:relative;width:100%;}
+.mini-sel{
+  width:100%;background:var(--inp2);
+  border:1px solid var(--b);border-radius:5px;
+  padding:4px 5px;color:var(--t);font-size:.64rem;
+  font-family:'DM Sans',sans-serif;outline:none;
+  transition:border-color .12s ease;
+}
+.mini-sel:focus{border-color:var(--bfocus);}
+.mini-sel option{background:var(--bg2);font-size:.72rem;}
+
+/* ── STATUS PILLS ── */
+.sp{display:inline-block;padding:2px 7px;border-radius:var(--r-pill);font-size:.56rem;font-weight:700;white-space:nowrap;letter-spacing:.02em;}
+.sp-active  {background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);}
+.sp-resolved{background:rgba(45,212,191,.15);color:#5eead4;border:1px solid rgba(45,212,191,.3);}
+.sp-closed  {background:rgba(52,211,153,.15);color:#6ee7b7;border:1px solid rgba(52,211,153,.3);}
+.sp-proposed{background:rgba(148,163,184,.15);color:#cbd5e1;border:1px solid rgba(148,163,184,.25);}
+
+.tp{display:inline-block;padding:1px 5px;border-radius:4px;font-size:.5rem;font-weight:700;margin:1px;}
+.tp-del   {background:rgba(16,185,129,.18);color:#34d399;}
+.tp-adhoc {background:rgba(168,85,247,.18);color:#c4b5fd;}
+.tp-onhold{background:rgba(245,158,11,.18);color:#fcd34d;}
+.tp-nondel{background:rgba(239,68,68,.18);color:#f87171;}
+
+.rb{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:var(--r-sm);font-size:.58rem;font-weight:600;}
+.rb-ok  {background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.rb-err {background:rgba(239,68,68,.12); color:#f87171;border:1px solid rgba(239,68,68,.25);}
+.rb-part{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.25);}
+
+/* ── TOOLBAR ── */
+.tbl-toolbar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin-bottom:12px;padding:10px 14px;
+  background:var(--glass2);border:1px solid var(--b);border-radius:var(--r);
+}
+.toolbar-lbl{font-size:.65rem;color:var(--tm);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+.summary-stat{font-size:.68rem;color:var(--tm);}
+.summary-stat strong{color:var(--acc);font-family:'Space Mono',monospace;}
+
+/* ── GEN LOG ── */
+.gen-log{
+  margin-top:14px;background:var(--bg3);
+  border:1px solid var(--b);border-radius:var(--r);
+  padding:10px 14px;font-size:.66rem;font-family:'Space Mono',monospace;
+  max-height:180px;overflow-y:auto;line-height:1.7;display:none;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.3);
+}
+.gen-log.vis{display:block;}
+.gen-log::-webkit-scrollbar{width:4px;}
+.gen-log::-webkit-scrollbar-thumb{background:var(--bs);}
+.log-ok  {color:#34d399;}.log-err{color:#f87171;}
+.log-info{color:#7dd3fc;}.log-warn{color:#fbbf24;}
+
+/* ── LOADING OVERLAY ── */
+.loading-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(4,9,28,.9);z-index:999;
+  align-items:center;justify-content:center;flex-direction:column;gap:16px;
+  backdrop-filter:blur(6px);
+}
+.loading-overlay.vis{display:flex;}
+.spinner{
+  width:38px;height:38px;
+  border:2px solid rgba(56,189,248,.12);
+  border-top-color:#38bdf8;border-radius:50%;
+  animation:spin .75s linear infinite;
+  box-shadow:0 0 16px rgba(56,189,248,.2);
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{color:#7dd3fc;font-size:.78rem;font-family:'DM Sans',sans-serif;font-weight:500;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--bg2);border:1px solid var(--bs);
+  border-radius:var(--r);padding:11px 18px;font-size:.76rem;
+  color:var(--ts);box-shadow:0 8px 32px var(--sh);z-index:1000;
+  opacity:0;transition:opacity .3s,transform .3s;max-width:380px;
+  transform:translateY(8px);
+}
+.toast.show{opacity:1;transform:translateY(0);}
+.empty-state{text-align:center;color:var(--tm);padding:36px;font-size:.8rem;}
+
+/* ── SEARCH ── */
+.si-wrap{position:relative;flex:1;min-width:160px;}
+.si-wrap input{
+  width:100%;background:var(--inp);border:1px solid var(--b);
+  border-radius:var(--r);padding:6px 10px 6px 28px;
+  color:var(--t);font-size:.72rem;outline:none;
+  font-family:'DM Sans',sans-serif;transition:border-color .2s,box-shadow .2s;
+}
+.si-wrap input:focus{border-color:var(--bfocus);box-shadow:0 0 0 3px var(--acc-glow);}
+.si-wrap::before{
+  content:'⌕';position:absolute;left:8px;top:50%;transform:translateY(-50%);
+  font-size:.9rem;color:var(--td);pointer-events:none;
+}
+
+/* ── PREVIEW MODAL ── */
+.modal-bg{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.75);z-index:500;
+  align-items:flex-start;justify-content:center;
+  padding:40px 20px;overflow-y:auto;
+  backdrop-filter:blur(4px);
+}
+.modal-bg.open{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--bs);
+  border-radius:var(--r-lg);width:100%;max-width:96vw;
+  padding:22px 26px;box-shadow:0 24px 64px var(--sh);position:relative;
+}
+.modal-title{
+  font-family:'Bricolage Grotesque',sans-serif;
+  font-size:.92rem;font-weight:700;color:var(--acc);
+  margin-bottom:16px;display:flex;align-items:center;gap:8px;
+}
+.modal-close{
+  margin-left:auto;background:none;border:none;cursor:pointer;
+  color:var(--tm);font-size:1.2rem;padding:0;
+  transition:color .2s;border-radius:50%;
+}
+.modal-close:hover{color:var(--t);}
+
+.preview-tbl{width:100%;border-collapse:collapse;font-size:.72rem;margin-bottom:18px;}
+.preview-tbl th{
+  background:var(--th-bg);color:var(--th-txt);
+  padding:7px 10px;text-align:left;
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:2px solid var(--b);
+}
+body.light .preview-tbl th{background:#e8eef8;color:#4a6280;}
+.preview-tbl td{padding:7px 10px;border-bottom:1px solid var(--b);color:var(--ts);vertical-align:middle;}
+.preview-tbl tr:hover td{background:var(--row-hover);}
+.modal-footer{
+  display:flex;align-items:center;gap:10px;justify-content:flex-end;
+  padding-top:14px;border-top:1px solid var(--b);
+}
+.preview-stat{font-size:.72rem;color:var(--tm);margin-right:auto;}
+.preview-stat strong{color:var(--acc);font-family:'Space Mono',monospace;}
+
+/* discipline chips */
+.d-chip{display:inline-block;padding:2px 7px;border-radius:var(--r-pill);font-size:.58rem;font-weight:700;letter-spacing:.02em;}
+.d-chip.d-dev {background:rgba(56,189,248,.15);color:#7dd3fc;}
+.d-chip.d-test{background:rgba(6,182,212,.15); color:#67e8f9;}
+.d-chip.d-ux  {background:rgba(236,72,153,.15);color:#f9a8d4;}
+.d-chip.d-ana {background:rgba(245,158,11,.15);color:#fde68a;}
+body.light .d-chip.d-dev {background:rgba(2,132,199,.1);color:#0284c7;}
+body.light .d-chip.d-test{background:rgba(3,105,161,.1);color:#0369a1;}
+body.light .d-chip.d-ux  {background:rgba(190,24,93,.1);color:#be185d;}
+body.light .d-chip.d-ana {background:rgba(146,64,14,.1);color:#92400e;}
+
+/* editable inputs in preview */
+.title-edit{
+  width:100%;background:var(--inp2);border:1px solid transparent;
+  border-radius:6px;padding:5px 8px;color:var(--t);font-size:.72rem;
+  font-family:'DM Sans',sans-serif;outline:none;transition:border-color .12s ease,background .12s ease;
+}
+.title-edit:hover{border-color:var(--b);}
+.title-edit:focus{border-color:var(--bfocus);background:var(--inp);}
+.pv-sel{
+  width:100%;min-width:140px;background:var(--inp2);border:1px solid var(--b);
+  border-radius:6px;padding:5px 7px;color:var(--t);font-size:.7rem;
+  font-family:'DM Sans',sans-serif;outline:none;transition:border-color .12s ease;
+}
+.pv-sel:focus{border-color:var(--bfocus);}
+.pv-sel option{background:var(--bg2);}
+.pv-num{
+  width:70px;background:var(--inp2);border:1px solid var(--b);
+  border-radius:6px;padding:5px 7px;color:var(--t);font-size:.7rem;
+  font-family:'Space Mono',monospace;outline:none;text-align:center;transition:border-color .12s ease;
+}
+.pv-num:focus{border-color:var(--bfocus);}
+
+/* success banner */
+.success-banner{
+  display:none;margin-top:14px;padding:13px 18px;
+  background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);
+  border-radius:var(--r);color:#34d399;font-size:.82rem;font-weight:600;
+  text-align:center;
+}
+.success-banner.vis{display:block;}
+
+/* ══ TABS ══ */
+.tab-bar{
+  display:flex;gap:3px;margin-bottom:0;
+  padding:4px;background:var(--glass);
+  border:1px solid var(--b);border-bottom:none;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+}
+.tab-btn{
+  padding:9px 20px;font-size:.74rem;font-weight:600;
+  border:none;cursor:pointer;background:transparent;color:var(--tm);
+  border-radius:var(--r-sm);font-family:'DM Sans',sans-serif;
+  transition:all .2s;position:relative;letter-spacing:.01em;
+}
+.tab-btn:hover{color:var(--t);background:var(--glass);}
+.tab-btn.active{
+  color:var(--acc);background:var(--surface);
+  box-shadow:0 1px 0 var(--acc);
+}
+body.light .tab-btn.active{background:rgba(255,255,255,.9);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+/* Task list table */
+.task-tbl-wrap{
+  overflow-x:auto;border-radius:var(--r);
+  border:1px solid var(--b);box-shadow:0 2px 12px var(--sh);
+}
+.task-tbl-wrap::-webkit-scrollbar{height:5px;}
+.task-tbl-wrap::-webkit-scrollbar-thumb{background:var(--bs);border-radius:3px;}
+.task-tbl{width:100%;border-collapse:collapse;font-size:.72rem;}
+.task-tbl th{
+  background:var(--th-bg);color:var(--th-txt);
+  padding:9px 10px;text-align:left;
+  font-family:'Space Mono',monospace;
+  font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--bs);white-space:nowrap;
+  position:sticky;top:0;z-index:2;
+}
+body.light .task-tbl th{background:#e8eef8;color:#4a6280;}
+.task-tbl td{padding:7px 10px;border-bottom:1px solid var(--b);color:var(--ts);vertical-align:middle;}
+.task-tbl tr:nth-child(even) td{background:var(--row-even);}
+.task-tbl tr:hover td{background:var(--row-hover);}
+.wi-link{color:var(--acc);font-weight:700;text-decoration:none;font-family:'Space Mono',monospace;font-size:.68rem;}
+.wi-link:hover{text-decoration:underline;}
+
+/* disc pills */
+.disc-pill{display:inline-block;padding:2px 7px;border-radius:var(--r-pill);font-size:.58rem;font-weight:700;letter-spacing:.02em;}
+.dp-dev {background:rgba(56,189,248,.15);color:#7dd3fc;}
+.dp-test{background:rgba(6,182,212,.15); color:#67e8f9;}
+.dp-ux  {background:rgba(236,72,153,.15);color:#f9a8d4;}
+.dp-ana {background:rgba(245,158,11,.15);color:#fde68a;}
+.dp-oth {background:rgba(148,163,184,.15);color:#cbd5e1;}
+body.light .dp-dev {background:rgba(2,132,199,.1);color:#0284c7;}
+body.light .dp-test{background:rgba(3,105,161,.1);color:#0369a1;}
+body.light .dp-ux  {background:rgba(190,24,93,.1);color:#be185d;}
+body.light .dp-ana {background:rgba(146,64,14,.1);color:#92400e;}
+body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
+
+.state-pill-sm{display:inline-block;padding:2px 7px;border-radius:var(--r-pill);font-size:.58rem;font-weight:700;white-space:nowrap;}
+.sps-active  {background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);}
+.sps-closed  {background:rgba(52,211,153,.15);color:#6ee7b7;border:1px solid rgba(52,211,153,.3);}
+.sps-resolved{background:rgba(45,212,191,.15);color:#5eead4;border:1px solid rgba(45,212,191,.3);}
+.sps-other   {background:rgba(148,163,184,.15);color:#cbd5e1;border:1px solid rgba(148,163,184,.25);}
+
+/* ── SPRINT TRACKER EXTRAS ── */
+.st-stat-card{
+  background:var(--surface);border:1px solid var(--b);
+  border-radius:var(--r);padding:12px 16px;text-align:center;
+  transition:border-color .2s,box-shadow .2s;
+}
+.st-stat-card:hover{border-color:var(--bs);box-shadow:var(--sh-accent);}
+.st-stat-val{font-family:'Space Mono',monospace;font-size:1.2rem;font-weight:700;margin-bottom:4px;}
+.st-stat-lbl{font-size:.62rem;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;}
+.st-assignee-card{
+  background:var(--surface);border:1px solid var(--b);
+  border-radius:var(--r);margin-bottom:10px;overflow:hidden;
+  transition:border-color .2s;
+}
+.st-assignee-card:hover{border-color:var(--bs);}
+.st-assignee-hdr{
+  padding:12px 16px;cursor:pointer;display:flex;
+  align-items:center;justify-content:space-between;
+  transition:background .15s;
+}
+.st-assignee-hdr:hover{background:var(--row-hover);}
+.st-avatar{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;
+  color:#fff;flex-shrink:0;
+}
+.st-mini-prog{width:64px;height:5px;background:var(--inp);border-radius:3px;overflow:hidden;}
+.st-mini-fill{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:3px;transition:width .6s;}
+.st-badge{display:inline-block;padding:2px 8px;border-radius:var(--r-pill);font-size:.62rem;font-weight:700;}
+.st-export-btn{
+  font-size:.62rem;padding:3px 10px;border-radius:var(--r-sm);
+  background:var(--glass2);border:1px solid var(--b);
+  color:var(--tm);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.st-export-btn:hover{border-color:var(--acc);color:var(--acc);}
+/* sub-tab */
+.sub-tab{
+  padding:7px 16px;font-size:.72rem;font-weight:600;border:none;cursor:pointer;
+  background:transparent;color:var(--tm);border-radius:var(--r-sm);
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.sub-tab:hover{color:var(--t);background:var(--glass);}
+.sub-tab.active{color:var(--acc);background:var(--surface);}
+
+/* ── PAT STATUS ── */
+#patStatus{
+  font-size:.67rem;color:var(--tm);margin-top:8px;
+  padding:6px 10px;background:var(--glass2);border-radius:var(--r-sm);
+  border:1px solid var(--b);
+}
+
+/* ── SECTION DIVIDERS ── */
+.sect-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:8px;margin-bottom:12px;
+}
+.sect-title{
+  font-family:'Bricolage Grotesque',sans-serif;
+  font-size:.85rem;font-weight:700;color:var(--acc);
+}
+.sect-badge{font-size:.68rem;color:var(--tm);font-weight:400;margin-left:6px;}
+.sect-ctx{font-size:.62rem;color:var(--td);margin-left:8px;}
+
+/* select overrides for inline selects */
+.inline-sel{
+  background:var(--inp);border:1px solid var(--b);
+  border-radius:var(--r);padding:7px 11px;
+  color:var(--t);font-size:.77rem;font-family:'DM Sans',sans-serif;
+  outline:none;width:100%;transition:border-color .2s,box-shadow .2s;
+}
+.inline-sel:focus{border-color:var(--bfocus);box-shadow:0 0 0 3px var(--acc-glow);}
+.inline-sel option{background:var(--bg2);}
+
+/* connection panel stat bar */
+.conn-stat-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:var(--r-sm);
+  background:var(--glass2);border:1px solid var(--b);
+  font-size:.67rem;color:var(--tm);margin-top:10px;
+}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:var(--td);flex-shrink:0;}
+.conn-dot.ok{background:#34d399;box-shadow:0 0 6px rgba(52,211,153,.5);}
+.conn-dot.err{background:#f87171;box-shadow:0 0 6px rgba(248,113,113,.5);}
+
+/* req count badge */
+#reqCountBadge{font-size:.68rem;color:var(--tm);margin-left:6px;font-weight:400;}
+
+/* progress bar */
+.prog-bar-track{background:var(--inp);border-radius:99px;height:7px;overflow:hidden;}
+.prog-bar-fill{height:100%;border-radius:99px;transition:width .8s ease;background:linear-gradient(90deg,var(--acc),#10b981);}
+
+/* ── COLUMN CONFIG SIDEBAR ── */
+#stColCfgPanel{
+  font-family:'DM Sans',sans-serif;
+}
+
+/* area multi-select filter */
+.fp-multiselect{position:relative;display:inline-block;min-width:140px;}
+.fp-multiselect-btn{
+  padding:5px 24px 5px 10px;font-size:.65rem;border-radius:var(--r);
+  cursor:pointer;background:var(--inp);border:1px solid var(--b);
+  color:var(--ts);font-weight:500;white-space:nowrap;width:100%;text-align:left;
+  position:relative;overflow:hidden;text-overflow:ellipsis;font-family:'DM Sans',sans-serif;
+  transition:border-color .2s;
+}
+.fp-multiselect-btn::after{content:'▾';position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.6rem;opacity:.6;}
+.fp-multiselect-btn.open::after{content:'▴';}
+.fp-multiselect-dropdown{
+  display:none;position:absolute;top:100%;left:0;z-index:999;min-width:180px;max-height:220px;
+  overflow-y:auto;background:var(--bg2);border:1px solid var(--bs);border-radius:var(--r);
+  box-shadow:0 8px 28px var(--sh);margin-top:3px;padding:4px 0;
+}
+.fp-multiselect-dropdown.open{display:block;}
+.fp-multiselect-item{
+  display:flex;align-items:center;gap:6px;padding:5px 12px;font-size:.68rem;
+  cursor:pointer;color:var(--ts);transition:background .15s;
+}
+.fp-multiselect-item:hover{background:var(--row-hover);}
+.fp-multiselect-item.select-all{border-bottom:1px solid var(--b);margin-bottom:2px;font-weight:600;color:var(--acc);}
+
+/* ── SPRINT LINK PREVIEW ── */
+#stLinkPreview{font-size:.64rem;color:var(--td);margin-bottom:6px;word-break:break-all;padding:5px 8px;background:var(--glass2);border-radius:var(--r-sm);border:1px solid var(--b);}
+#stLinkPreview a{color:var(--acc);}
+
+/* ── POPUP OVERLAY ── */
+#stPopupOverlay>div,
+#stColCfgPanel{
+  font-family:'DM Sans',sans-serif;
+}
+
+/* ── ERROR PANEL ── */
+#errPanel{font-family:'DM Sans',sans-serif;}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading…</div></div>
+<div class="toast" id="toast"></div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-icon">🐞</div>
+    <div class="topbar-title">Bug Management</div>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
+    <span id="connInfo" style="font-size:.65rem;color:var(--tm);display:none;padding:4px 10px;background:var(--glass);border:1px solid var(--b);border-radius:var(--r-pill);"></span>
+    <button class="btn btn-ghost btn-sm" id="reConnBtn" onclick="showConnPanel()" style="display:none;">🔌 Reconnect</button>
+    <div id="connBadge" class="badge b-info">◌ Not connected</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══ STEP 1: CONNECTION ══ -->
+<div class="panel" id="connPanel">
+  <div class="panel-title"><span class="step-lbl">Step 1</span>Connection</div>
+  <div style="display:grid;grid-template-columns:1.6fr 1.5fr 1fr 1fr;gap:14px;align-items:end;max-width:900px;">
+    <div class="field">
+      <label>TFS / Azure DevOps URL</label>
+      <input type="text" id="tfsUrl" placeholder="https://tfs.company.com/tfs/Collection"/>
+    </div>
+    <div class="field">
+      <label>Personal Access Token (PAT)</label>
+      <div class="pat-wrap">
+        <input type="password" id="pat" placeholder="Enter PAT then leave field" onblur="onPatBlur()"/>
+        <button class="pat-eye" onclick="togglePat()" id="patEye">👁️</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Project</label>
+      <select id="projectSel" disabled class="inline-sel">
+        <option value="">— enter PAT first —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label style="visibility:hidden">.</label>
+      <button class="btn btn-primary" id="connectBtn" onclick="connectProject()" disabled>🔗 Connect</button>
+    </div>
+  </div>
+  <div id="patStatus" class="conn-stat-bar">
+    <span class="conn-dot" id="connDot"></span>
+    Enter PAT and leave the field — projects will auto-load
+  </div>
+</div>
+
+<!-- ══ TAB BAR (visible after connect) ══ -->
+<div id="tabBar" style="display:none;">
+  <div class="tab-bar">
+    <button class="tab-btn" onclick="location.href='index.html'">📝 Task Management</button>
+    <button class="tab-btn active" id="tabBtnBug">🐞 Bug Management</button>
+  </div>
+</div>
+
+<!-- ══ BUG RETESTING ══ -->
+<div class="tab-content active" id="tabContentBug">
+
+  <!-- SPRINT SELECTION -->
+  <div class="panel" id="sprintPanel" style="display:none;">
+    <div class="panel-title">
+      Sprint &amp; Area
+      <button class="recon-btn" onclick="showConnPanel()">🔌 Change Project</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end;max-width:700px;">
+      <div class="field">
+        <label>Sprint / Iteration <span style="color:#34d399;font-weight:400;text-transform:none;letter-spacing:0;">(latest quarter pre-selected)</span></label>
+        <select id="iterSelect" onchange="selectIter(this.value)">
+          <option value="">-- Select sprint --</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Area Path <span style="color:#f87171;font-weight:500;text-transform:none;letter-spacing:0;">*required</span></label>
+        <select id="areaSel" onchange="onAreaChange(this.value)" class="inline-sel">
+          <option value="">— select an area —</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;">
+      <button class="btn btn-primary" onclick="loadBugs()">🐞 Load Resolved Bugs</button>
+    </div>
+  </div>
+
+  <!-- BUG GRID -->
+  <div id="bugScreen" style="display:none;">
+    <div class="panel" style="padding:14px 18px;">
+      <div class="sect-hdr">
+        <div>
+          <span class="sect-title">🐞 Resolved Bugs</span>
+          <span id="bugCountBadge"></span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="backToSprint()">← Back to Sprint</button>
+      </div>
+      <div class="tbl-toolbar">
+        <div class="si-wrap" style="max-width:240px;">
+          <input type="text" id="bugSearch" placeholder="Search bugs…" oninput="filterBugs()"/>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="selectAllBugs(true)">✔ Select All</button>
+        <button class="btn btn-ghost btn-sm" onclick="selectAllBugs(false)">✕ Clear</button>
+        <button class="btn btn-ghost btn-sm" id="bugRefreshBtn" onclick="refreshBugs()" title="Re-fetch resolved bugs for the current Sprint / Area">🔄 Refresh</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <span class="summary-stat">Bugs: <strong id="smBugs">0</strong></span>
+          <span class="summary-stat">Retest tasks: <strong id="smTasks">0</strong></span>
+          <button class="btn btn-success" id="genAllBtn" onclick="generateAllTasks()">
+            ⚡ Generate Retesting Tasks
+          </button>
+        </div>
+      </div>
+      <div style="font-size:.6rem;color:var(--tm);margin:-4px 2px 10px;">
+        One <strong style="color:#67e8f9;">Bug ReTesting</strong> task per selected bug &middot; tester defaults to the bug's <strong>creator</strong> and can be changed to any capacity Test member &middot; <span style="color:#fbbf24;font-weight:700;">⟳ N existing</span> = open retest task(s) already linked (you can still add another for a repeat retest) &middot; tasks are created in the active sprint: <strong id="targetIterHint" style="color:var(--acc);">—</strong>
+      </div>
+      <div class="excel-wrap">
+        <table class="excel-tbl" id="bugTbl">
+          <thead id="bugHead"></thead>
+          <tbody id="bugBody"></tbody>
+        </table>
+        <div class="empty-state" id="bugEmpty" style="display:none;">No resolved bugs found.</div>
+      </div>
+      <div class="gen-log" id="genLog"></div>
+      <div class="success-banner" id="successBanner"></div>
+    </div>
+  </div>
+
+</div><!-- /tabContentBug -->
+
+</div><!-- /main -->
+
+<!-- ══ PREVIEW MODAL ══ -->
+<div class="modal-bg" id="previewModal">
+  <div class="modal">
+    <div class="modal-title">
+      👁️ Preview — Bug Retesting Tasks to be Created
+      <button class="modal-close" onclick="closePreview()">✕</button>
+    </div>
+    <div id="previewBody"></div>
+    <div class="modal-footer">
+      <span class="preview-stat" id="previewStat"></span>
+      <button class="btn btn-ghost btn-sm" onclick="closePreview()">Cancel</button>
+      <button class="btn btn-success" id="confirmGenBtn" onclick="confirmGenerate()">⚡ Confirm &amp; Create Tasks</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════
+   BUG RETESTING — CONSTANTS
+   Confirmed from the real task created under Bug 1624457 (Task 1634036):
+     Title       : "Bug ReTesting : {bugId}: {bug title}"
+     Discipline  : Test
+     Tags        : "Bug Retesting; Bug/Maintenance"
+     Exec Type   : Manual
+═══════════════════════════ */
+const RETEST_DISC   = 'Test';
+const RETEST_TAGS   = 'Bug Retesting; Bug/Maintenance';
+const RETEST_EXEC   = 'Manual';
+const RETEST_LABEL  = 'Bug ReTesting';
+/* Build the retest task title from a bug. */
+function retestTitle(bug){ return 'Bug ReTesting : '+bug.id+': '+String(bug.title||'').trim(); }
+/* Does a task title look like a Bug Retesting task?  (used to disable duplicates) */
+function isRetestTitle(title){ return /^\s*bug\s*re-?\s*testing\b/i.test(String(title||'')); }
+
+/* Reference name for the "Task Execution Type" field.
+   null = not yet resolved · '' = looked up but not found in this project. */
+let EXEC_TYPE_FIELD=null;
+const EXEC_TYPE_DISPLAY='Task Execution Type';
+async function resolveExecTypeField(){
+    if(EXEC_TYPE_FIELD!==null) return EXEC_TYPE_FIELD;
+    try{
+        const r=await fetch(tfsUrl+'/_apis/wit/fields?api-version=5.0',{headers:hdrs});
+        if(r.ok){
+            const fl=(await r.json()).value||[];
+            const norm=s=>String(s||'').toLowerCase().replace(/\s+/g,'');
+            const want=norm(EXEC_TYPE_DISPLAY);
+            let m=fl.find(f=>norm(f.name)===want)
+                ||fl.find(f=>norm(f.referenceName)==='custom.'+want)
+                ||fl.find(f=>norm(f.referenceName).includes('executiontype'));
+            EXEC_TYPE_FIELD=m?m.referenceName:'';
+        }else{ EXEC_TYPE_FIELD=''; }
+    }catch(e){ EXEC_TYPE_FIELD=''; }
+    return EXEC_TYPE_FIELD;
+}
+
+/* ── ASSIGNEE IDENTITY HELPERS ──
+   memberList holds {name, unique, value} — value = "Display Name <uniqueName>"
+   so Azure DevOps resolves the exact person even when two share a display name. */
+function assignedDisplayName(val){
+    if(!val) return '';
+    const m=memberList.find(x=>x.value===val);
+    if(m) return m.name;
+    return String(val).replace(/<[^>]+>/g,'').replace(/^.*\\/,'').trim();
+}
+/* Build tester <option> markup for a bug: the bug's CREATOR first (the person who
+   generated the bug), then every capacity Test member. `selectedVal` pre-selects. */
+function testerOptionsHtml(bug,selectedVal){
+    const counts={};
+    memberList.forEach(m=>{counts[m.name]=(counts[m.name]||0)+1;});
+    let html='<option value="">— Unassigned —</option>';
+    const creatorVal=bug.createdByValue||'';
+    const inCapacity=creatorVal && memberList.some(m=>m.value===creatorVal);
+    if(creatorVal && !inCapacity){
+        const sel=(creatorVal===selectedVal)?' selected':'';
+        html+='<optgroup label="Bug Creator">'+
+            '<option value="'+escAttr(creatorVal)+'"'+sel+'>'+escHtml(bug.createdByName)+' (creator)</option>'+
+            '</optgroup>';
+    }
+    html+='<optgroup label="Capacity (Test)">'+
+        memberList.map(m=>{
+            const dup=counts[m.name]>1 && m.unique;
+            let label=dup ? m.name+' ('+m.unique+')' : m.name;
+            if(m.value===creatorVal) label+=' (creator)';
+            const sel=(m.value===selectedVal)?' selected':'';
+            return '<option value="'+escAttr(m.value)+'"'+sel+'>'+escHtml(label)+'</option>';
+        }).join('')+
+        '</optgroup>';
+    return html;
+}
+
+/* ═══════════════════════════
+   STATE
+═══════════════════════════ */
+let tfsUrl='', hdrs=null, currentProject='', selectedIter='';
+let allIterations=[], allAreas=[], memberList=[];
+let bugs=[], filteredBugs=[];
+// bugData[bugId] = { sel:bool, tester:str, est:number }
+let bugData={};
+let bugMap={};                // bugId -> bug object
+let existingRetest={};        // bugId -> count of OPEN Bug Retesting tasks (informational)
+let currentIterationPath='';  // team's active sprint — where every retest task is created
+let currentIterationName='';
+
+/* Shared WIQL path escaper. */
+function wiqlEscPath(s){return String(s||'').replace(/^\\/,'').replace(/\\Iteration\\/i,'\\').replace(/\\Area\\/i,'\\').replace(/'/g,"''");}
+
+/* Repeat retests are always allowed — every loaded bug's cell stays selectable. */
+function isCellSelectable(bug){ return !!bug; }
+
+/* ═══════════════════════════
+   THEME
+═══════════════════════════ */
+let isDark=true;
+function toggleTheme(){
+    isDark=!isDark;
+    document.body.classList.toggle('light',!isDark);
+    document.getElementById('themeBtn').textContent=isDark?'🌙 Dark':'☀️ Light';
+    localStorage.setItem('tc_theme',isDark?'dark':'light');
+}
+
+/* ═══════════════════════════
+   INIT — restore creds/project and auto-connect
+═══════════════════════════ */
+window.addEventListener('DOMContentLoaded',async()=>{
+    const t=localStorage.getItem('tc_theme');
+    if(t==='light'){isDark=false;document.body.classList.add('light');document.getElementById('themeBtn').textContent='☀️ Light';}
+
+    const su=localStorage.getItem('sprintTracker_tfsUrl');
+    const sp=localStorage.getItem('sprintTracker_pat');
+    if(su) document.getElementById('tfsUrl').value=su;
+    if(sp) document.getElementById('pat').value=sp;
+    if(su&&sp){
+        await onPatBlur();
+        // Pre-select the last project used in Task Management and auto-connect.
+        const proj=localStorage.getItem('tc_project');
+        const psel=document.getElementById('projectSel');
+        if(proj && psel && [...psel.options].some(o=>o.value===proj)){
+            psel.value=proj;
+            connectProject();
+        }
+    }
+});
+
+/* ═══════════════════════════
+   AUTH
+═══════════════════════════ */
+function togglePat(){
+    const i=document.getElementById('pat');
+    i.type=i.type==='password'?'text':'password';
+    document.getElementById('patEye').textContent=i.type==='password'?'👁️':'🔒';
+}
+async function onPatBlur(){
+    const url=document.getElementById('tfsUrl').value.trim().replace(/\/$/,'');
+    const pat=document.getElementById('pat').value.trim();
+    if(!url||!pat) return;
+    tfsUrl=url; hdrs={'Authorization':'Basic '+btoa(':'+pat),'Content-Type':'application/json'};
+    EXEC_TYPE_FIELD=null;
+    setPS('⏳ Validating…','var(--tm)');
+    showLoading('Validating PAT…');
+    try{
+        const cr=await fetch(tfsUrl+'/_apis/connectionData',{headers:hdrs});
+        if(!cr.ok) throw new Error('Auth failed ('+cr.status+')');
+        const pr=await fetch(tfsUrl+'/_apis/projects?api-version=5.0',{headers:hdrs});
+        if(!pr.ok) throw new Error('Could not load projects');
+        const projects=(await pr.json()).value||[];
+        localStorage.setItem('sprintTracker_tfsUrl',tfsUrl);
+        localStorage.setItem('sprintTracker_pat',pat);
+        renderProjectDropdown(projects);
+        setBadge('✅ Authenticated','b-ok');
+        setPS('✅ '+projects.length+' projects loaded — select one and click Connect','#34d399');
+    }catch(e){setBadge('❌ Auth failed','b-err');setPS('❌ '+e.message,'#f87171');showToast('❌ '+e.message,'err');}
+    finally{hideLoading();}
+}
+function setPS(m,c){const e=document.getElementById('patStatus');e.textContent=m;e.style.color=c;}
+function renderProjectDropdown(projects){
+    const sel=document.getElementById('projectSel');
+    sel.innerHTML='<option value="">— select a project —</option>'+
+        projects.map(p=>`<option value="${escAttr(p.name)}">${escHtml(p.name)}</option>`).join('');
+    sel.disabled=false;
+    document.getElementById('connectBtn').disabled=false;
+}
+
+/* ═══════════════════════════
+   CONNECT PROJECT
+═══════════════════════════ */
+async function connectProject(){
+    const sel=document.getElementById('projectSel');
+    currentProject=sel?sel.value:'';
+    if(!currentProject){showToast('❌ Select a project first','err');return;}
+    localStorage.setItem('tc_project',currentProject);
+    showLoading('Connecting to '+currentProject+'…');
+    try{
+        const[ir,ar]=await Promise.all([
+            fetch(tfsUrl+'/'+currentProject+'/_apis/wit/classificationnodes/iterations?$depth=10&api-version=5.0',{headers:hdrs}),
+            fetch(tfsUrl+'/'+currentProject+'/_apis/wit/classificationnodes/areas?$depth=10&api-version=5.0',{headers:hdrs})
+        ]);
+        if(!ir.ok) throw new Error('Failed to load iterations');
+        allIterations=flattenNodes(await ir.json());
+        allAreas=flattenNodes(await ar.json());
+        allAreas.sort((a,b)=>a.name.localeCompare(b.name));
+
+        memberList=[];
+
+        const as=document.getElementById('areaSel');
+        as.innerHTML='<option value="">— select an area —</option>'+
+            allAreas.map(a=>`<option value="${escAttr(a.path)}">${escHtml(a.name)}</option>`).join('');
+
+        buildIterSelect();
+
+        document.getElementById('connPanel').style.display='none';
+        document.getElementById('sprintPanel').style.display='block';
+        document.getElementById('tabBar').style.display='block';
+        document.getElementById('reConnBtn').style.display='inline-flex';
+        document.getElementById('connInfo').textContent='Project: '+currentProject;
+        document.getElementById('connInfo').style.display='inline';
+        setBadge('✅ '+currentProject,'b-ok');
+        document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
+        showToast('✅ Connected to "'+currentProject+'"');
+    }catch(e){showToast('❌ '+e.message,'err');}
+    finally{hideLoading();}
+}
+
+function showConnPanel(){
+    document.getElementById('connPanel').style.display='block';
+    document.getElementById('sprintPanel').style.display='none';
+    document.getElementById('bugScreen').style.display='none';
+    document.getElementById('tabBar').style.display='none';
+    document.getElementById('reConnBtn').style.display='none';
+    document.getElementById('connInfo').style.display='none';
+}
+function backToSprint(){
+    document.getElementById('sprintPanel').style.display='block';
+    document.getElementById('bugScreen').style.display='none';
+    document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildIterSelect(){
+    const sel=document.getElementById('iterSelect');
+    if(!allIterations.length){sel.innerHTML='<option value="">No iterations found</option>';return;}
+    const groups={};
+    const rePi=/pi[-_\s]?\d{4}[-_\s]?\d+/i;
+    const reQ=/q[1-4][-_\s]?\d{4}|\d{4}[-_\s]?q[1-4]/i;
+    allIterations.forEach(it=>{
+        const m=it.name.match(rePi)||it.name.match(reQ)||(it.path.split('\\').length>2?[it.path.split('\\').slice(1,-1).join(' ')]:null);
+        const gk=m?m[0].toUpperCase().replace(/[-_\s]+/g,' '):'Other';
+        if(!groups[gk])groups[gk]=[];
+        groups[gk].push(it);
+    });
+    const gKeys=Object.keys(groups).sort((a,b)=>{
+        const na=a.replace(/\D/g,''),nb=b.replace(/\D/g,'');
+        return (parseInt(nb)||0)-(parseInt(na)||0);
+    });
+    sel.innerHTML='<option value="">-- Select sprint --</option>';
+    let firstSet=false;
+    gKeys.forEach((gk,gi)=>{
+        const grp=document.createElement('optgroup');
+        grp.label=(gi===0?'★ Latest: ':'')+gk;
+        groups[gk].forEach((it)=>{
+            const opt=document.createElement('option');
+            opt.value=it.path;
+            opt.textContent=it.name;
+            if(!firstSet){opt.selected=true;selectedIter=it.path;firstSet=true;}
+            grp.appendChild(opt);
+        });
+        sel.appendChild(grp);
+    });
+}
+function selectIter(path){selectedIter=path;}
+function onAreaChange(areaPath){ memberList=[]; }
+
+/* ═══════════════════════════
+   LOAD RESOLVED BUGS
+   Same inputs as Task Management: Iteration (required) + Area (required).
+═══════════════════════════ */
+async function loadBugs(opts){
+    opts=opts||{};
+    if(!selectedIter){showToast('❌ Select a sprint first','err');return;}
+    const area=document.getElementById('areaSel').value;
+    if(!area){showToast('❌ Select an area first','err');return;}
+    showLoading('Loading resolved bugs…');
+    try{
+        const iterSafe=wiqlEscPath(selectedIter);
+        const areaSafe=wiqlEscPath(area);
+        let wiql="SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Bug' AND [System.State] = 'Resolved' AND [System.IterationPath] UNDER '"+iterSafe+"'";
+        if(areaSafe) wiql+=" AND [System.AreaPath] UNDER '"+areaSafe+"'";
+        wiql+=' ORDER BY [System.Id]';
+        console.log('[BugMgmt] WIQL:',wiql);
+
+        const wr=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/wiql?api-version=5.0',{
+            method:'POST',headers:{...hdrs,'Content-Type':'application/json'},body:JSON.stringify({query:wiql})
+        });
+        if(!wr.ok){
+            const rt=await wr.text();let msg=rt;
+            try{const eb=JSON.parse(rt);msg=eb.message||rt;}catch(e2){}
+            showErrorPanel('WIQL '+wr.status,msg+'\n\nQuery:\n'+wiql);
+            throw new Error('WIQL '+wr.status+': '+msg.substring(0,150));
+        }
+        const ids=((await wr.json()).workItems||[]).map(w=>w.id);
+        if(!ids.length){
+            bugs=[];filteredBugs=[];bugData={};bugMap={};existingRetest={};
+            document.getElementById('sprintPanel').style.display='none';
+            document.getElementById('bugScreen').style.display='block';
+            renderBugGrid();showToast('ℹ️ No resolved bugs found','warn');return;
+        }
+        const fields='System.Id,System.Title,System.State,System.IterationPath,System.AreaPath,System.Tags,System.CreatedBy,System.AssignedTo,Microsoft.VSTS.Common.Severity';
+        let all=[];
+        for(let i=0;i<ids.length;i+=200){
+            const batch=ids.slice(i,i+200).join(',');
+            const r=await fetch(tfsUrl+'/_apis/wit/workitems?ids='+batch+'&fields='+fields+'&api-version=5.0',{headers:hdrs});
+            if(!r.ok) throw new Error('Detail fetch failed');
+            all.push(...((await r.json()).value||[]));
+        }
+        bugs=all.map(w=>{
+            const cb=w.fields['System.CreatedBy']||{};
+            const cbName=String((cb.displayName||cb)||'').replace(/<[^>]+>/g,'').trim();
+            const cbUnique=(cb.uniqueName||'').trim();
+            return {
+                id:w.id,
+                title:w.fields['System.Title']||'',
+                state:w.fields['System.State']||'',
+                iter:w.fields['System.IterationPath']||'',
+                area:w.fields['System.AreaPath']||'',
+                tags:w.fields['System.Tags']||'',
+                severity:w.fields['Microsoft.VSTS.Common.Severity']||'',
+                createdByName:cbName,
+                createdByUnique:cbUnique,
+                createdByValue:cbUnique ? (cbName+' <'+cbUnique+'>') : cbName,
+                url:tfsUrl+'/_workitems/edit/'+w.id
+            };
+        });
+        bugData={};bugMap={};
+        bugs.forEach(b=>{bugData[b.id]={sel:false,tester:b.createdByValue||'',est:0};bugMap[b.id]=b;});
+        document.getElementById('sprintPanel').style.display='none';
+        document.getElementById('bugScreen').style.display='block';
+        document.getElementById('bugCountBadge').textContent='— '+bugs.length+' resolved bug'+(bugs.length!==1?'s':'')+' loaded';
+
+        // Resolve the team's active sprint — every retest task is created here
+        await resolveCurrentIteration(area);
+        updateTargetIterHint();
+        // Count OPEN retest tasks already linked to these bugs (informational only)
+        await loadExistingRetests(ids);
+
+        filterBugs();
+        if(!opts.silent) document.getElementById('bugScreen').scrollIntoView({behavior:'smooth',block:'start'});
+        showToast('✅ Loaded '+bugs.length+' resolved bugs');
+
+        // Load Test-discipline members from sprint capacity for the selected area
+        loadMembersFromCapacity(selectedIter, area);
+    }catch(e){showToast('❌ '+e.message,'err');}
+    finally{hideLoading();}
+}
+
+/* ═══════════════════════════
+   EXISTING RETEST TASKS (informational — not a block)
+   Finds OPEN Tasks (any iteration) whose title looks like a Bug Retesting task and
+   whose parent is one of the loaded bugs, and counts them per bug. Shown as a small
+   "N existing" note; the cell stays selectable so a repeat retest can still be added.
+═══════════════════════════ */
+async function loadExistingRetests(bugIds){
+    existingRetest={};
+    if(!currentProject||!bugIds||!bugIds.length) return;
+    try{
+        const wiql="SELECT [System.Id] FROM WorkItems WHERE [System.WorkItemType] = 'Task' AND [System.State] NOT IN ('Closed','Done','Removed','Completed') AND [System.Title] CONTAINS 'Bug ReTesting'";
+        const wr=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/wiql?api-version=5.0',{
+            method:'POST',headers:{...hdrs,'Content-Type':'application/json'},body:JSON.stringify({query:wiql})
+        });
+        if(!wr.ok){ console.warn('[BugMgmt] existing-retest WIQL '+wr.status); return; }
+        const ids=((await wr.json()).workItems||[]).map(w=>w.id);
+        if(!ids.length) return;
+
+        const bugIdSet=new Set(bugIds.map(Number));
+        for(let i=0;i<ids.length;i+=200){
+            const batch=ids.slice(i,i+200).join(',');
+            try{
+                const rr=await fetch(tfsUrl+'/_apis/wit/workitems?ids='+batch+'&$expand=relations&api-version=5.0',{headers:hdrs});
+                if(!rr.ok) continue;
+                ((await rr.json()).value||[]).forEach(w=>{
+                    if(!isRetestTitle((w.fields||{})['System.Title']||'')) return;
+                    const parentRel=(w.relations||[]).find(rel=>rel.rel==='System.LinkTypes.Hierarchy-Reverse');
+                    if(!parentRel) return;
+                    const parentId=parseInt(parentRel.url.split('/').pop());
+                    if(bugIdSet.has(parentId)) existingRetest[parentId]=(existingRetest[parentId]||0)+1;
+                });
+            }catch(e2){ console.warn('[BugMgmt] existing-retest relations error:',e2.message); }
+        }
+        const total=Object.values(existingRetest).reduce((s,n)=>s+n,0);
+        if(total) console.log('[BugMgmt] open retest tasks mapped:',total,existingRetest);
+    }catch(e){ console.warn('[BugMgmt] loadExistingRetests error:',e.message); }
+}
+
+/* ═══════════════════════════
+   RESOLVE CURRENT ITERATION (team's active sprint by date)
+   Retest tasks always land in the active sprint. We pick the area's team (same
+   area→team match as capacity), then ask team settings for its current iteration
+   (?$timeframe=current). The returned .path is a valid System.IterationPath.
+═══════════════════════════ */
+async function resolveCurrentIteration(areaPath){
+    currentIterationPath=''; currentIterationName='';
+    if(!currentProject) return;
+    try{
+        const tr=await fetch(tfsUrl+'/_apis/projects/'+currentProject+'/teams?api-version=5.0',{headers:hdrs});
+        if(!tr.ok) return;
+        const teams=((await tr.json()).value)||[];
+        const areaLeaf=(areaPath||'').split('\\').pop().toLowerCase();
+        const primary=
+            teams.find(t=>t.name.toLowerCase()===areaLeaf) ||
+            teams.find(t=>t.name.toLowerCase()===areaLeaf+' team') ||
+            teams.find(t=>t.name.toLowerCase()===areaLeaf+'-team') ||
+            teams.find(t=>t.name===currentProject||t.name===currentProject+' Team') ||
+            teams[0];
+        const ordered=[primary,...teams.filter(t=>t!==primary)].filter(Boolean);
+        for(const team of ordered){
+            try{
+                const r=await fetch(tfsUrl+'/'+currentProject+'/'+encodeURIComponent(team.name)+
+                    '/_apis/work/teamsettings/iterations?$timeframe=current&api-version=5.0',{headers:hdrs});
+                if(!r.ok) continue;
+                const arr=((await r.json()).value)||[];
+                const cur=arr.find(i=>i&&i.path);
+                if(cur){
+                    currentIterationPath=cur.path;
+                    currentIterationName=cur.name||cur.path.split('\\').pop();
+                    console.log('[BugMgmt] active sprint from team',team.name,'→',currentIterationPath);
+                    return;
+                }
+            }catch(e){}
+        }
+        console.warn('[BugMgmt] No active sprint found — will fall back to each bug’s own iteration.');
+        showToast('⚠️ Could not detect the active sprint — retest tasks will use each bug’s iteration','warn');
+    }catch(e){ console.warn('[BugMgmt] resolveCurrentIteration error:',e.message); }
+}
+
+/* Update the "created in …" hint with the resolved active sprint. */
+function updateTargetIterHint(){
+    const el=document.getElementById('targetIterHint');
+    if(el) el.textContent=currentIterationName||(currentIterationPath?currentIterationPath.split('\\').pop():'each bug’s own sprint');
+}
+
+/* ═══════════════════════════
+   CAPACITY MEMBERS (Test discipline) — mirrors Task Management
+═══════════════════════════ */
+async function loadMembersFromCapacity(iterPath, areaPath){
+    if(!iterPath||!currentProject) return;
+    try{
+        const tr=await fetch(tfsUrl+'/_apis/projects/'+currentProject+'/teams?api-version=5.0',{headers:hdrs});
+        if(!tr.ok) return;
+        const teams=((await tr.json()).value)||[];
+        const iterName=iterPath.split('\\').pop();
+
+        async function capacityForTeam(team){
+            try{
+                const irResp=await fetch(
+                    tfsUrl+'/'+currentProject+'/'+encodeURIComponent(team.name)+
+                    '/_apis/work/teamsettings/iterations?api-version=5.0',{headers:hdrs});
+                if(!irResp.ok) return [];
+                const iterData=((await irResp.json()).value)||[];
+                const mi=iterData.find(i=>i.path===iterPath||i.name===iterName);
+                if(!mi||!mi.id) return [];
+                const capResp=await fetch(
+                    tfsUrl+'/'+currentProject+'/'+encodeURIComponent(team.name)+
+                    '/_apis/work/teamsettings/iterations/'+mi.id+'/capacities?api-version=5.0',{headers:hdrs});
+                if(!capResp.ok) return [];
+                return ((await capResp.json()).value)||[];
+            }catch(e){ return []; }
+        }
+
+        const areaLeaf=(areaPath||'').split('\\').pop().toLowerCase();
+        const primary=
+            teams.find(t=>t.name.toLowerCase()===areaLeaf) ||
+            teams.find(t=>t.name.toLowerCase()===areaLeaf+' team') ||
+            teams.find(t=>t.name.toLowerCase()===areaLeaf+'-team') ||
+            teams.find(t=>t.name===currentProject||t.name===currentProject+' Team') ||
+            teams[0];
+        const ordered=[primary,...teams.filter(t=>t!==primary)];
+
+        let capData=[];
+        for(const team of ordered){
+            const items=await capacityForTeam(team);
+            if(items.length){ capData=items; console.log('[BugMgmt] Capacity from team:',team.name,'('+items.length+' members)'); break; }
+        }
+        if(!capData.length){
+            console.warn('[BugMgmt] No capacity members found for iteration',iterName);
+            showToast('⚠️ No members found in sprint capacity — you can still assign the bug creator','warn');
+            memberList=[];
+            if(document.getElementById('bugScreen').style.display==='block'&&filteredBugs.length) renderBugGrid();
+            return;
+        }
+
+        const mapped=capData.map(item=>{
+            const tm=item.teamMember||{};
+            let name=tm.displayName||'';
+            const unique=(tm.uniqueName||'').trim();
+            name=name.replace(/<[^>]+>/g,'').trim();
+            if(name.includes('\\')){
+                const login=name.split('\\').pop();
+                name=(login&&!login.includes(' '))
+                    ? login.replace(/[._-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())
+                    : login;
+            }
+            if(!name) return null;
+            const activities=(item.activities||[]).map(a=>String(a.name||'').trim()).filter(Boolean);
+            const isTest=activities.some(a=>a.toLowerCase().includes('test'));
+            const value=unique ? (name+' <'+unique+'>') : name;
+            return {name, unique, value, isTest, activities};
+        }).filter(Boolean);
+
+        const seen=new Set();
+        const finalMembers=mapped
+            .filter(m=>m.isTest)
+            .filter(m=>{ if(seen.has(m.value)) return false; seen.add(m.value); return true; })
+            .sort((a,b)=>a.name.localeCompare(b.name));
+
+        if(finalMembers.length){
+            memberList=finalMembers;
+            showToast('✅ '+memberList.length+' Test member'+(memberList.length!==1?'s':'')+' loaded from capacity','ok');
+        } else {
+            memberList=[];
+            console.warn('[BugMgmt] capacity members found but none with a Test activity.');
+            showToast('⚠️ '+mapped.length+' member(s) in capacity, none with Test discipline','warn');
+        }
+        if(document.getElementById('bugScreen').style.display==='block'&&filteredBugs.length) renderBugGrid();
+    }catch(e){ console.warn('[BugMgmt] loadMembersFromCapacity error:',e.message); }
+}
+
+/* ═══════════════════════════
+   RENDER BUG GRID (same Excel look/logic as Task Management)
+═══════════════════════════ */
+function sevClass(s){
+    const l=String(s||'').toLowerCase();
+    if(l.includes('1')||l.includes('critical')) return 'b-err';
+    if(l.includes('2')||l.includes('high'))     return 'b-err';
+    if(l.includes('3')||l.includes('medium'))   return 'b-info';
+    return 'b-info';
+}
+function renderBugGrid(){
+    const thead=document.getElementById('bugHead');
+    const tbody=document.getElementById('bugBody');
+    const empty=document.getElementById('bugEmpty');
+
+    thead.innerHTML='<tr>'+
+        '<th class="c-num col-sticky" style="left:0;">#</th>'+
+        '<th class="c-id col-sticky" style="left:36px;">Bug ID</th>'+
+        '<th class="c-title col-sticky" style="left:94px;width:220px;min-width:160px;">Title</th>'+
+        '<th class="c-state">State</th>'+
+        '<th class="c-tag">Severity</th>'+
+        '<th class="c-res">Created By</th>'+
+        '<th class="th-vert d-test"><span class="th-vert-inner">Bug ReTesting</span></th>'+
+        '</tr>';
+
+    if(!filteredBugs.length){
+        tbody.innerHTML='';empty.style.display='block';
+        updateSummary();return;
+    }
+    empty.style.display='none';
+
+    tbody.innerHTML=filteredBugs.map((b,idx)=>{
+        const bd=bugData[b.id]||{sel:false,tester:b.createdByValue||'',est:0};
+        const cnt=existingRetest[b.id]||0;
+        const note=cnt>0
+            ? `<span title="${cnt} open Bug Retesting task(s) already linked to this bug — you can still add another for a repeat retest" style="display:block;font-size:.5rem;color:#fbbf24;font-weight:700;margin-top:3px;white-space:nowrap;letter-spacing:.02em;">⟳ ${cnt} existing</span>`
+            : '';
+        const cell=`<td class="tc" id="tc_${b.id}" onclick="toggleCell(${b.id},event)">
+                <div class="tc-inner">
+                    <input type="checkbox" class="tc-cb" id="cb_${b.id}"
+                        onclick="event.stopPropagation()" onchange="onCellChange(${b.id})">
+                    ${note}
+                    <div class="tc-fields" id="tcf_${b.id}">
+                        <div class="mini-sel-wrap">
+                            <select class="mini-sel" id="tester_${b.id}" onclick="event.stopPropagation()" title="Tester">${testerOptionsHtml(b,bd.tester)}</select>
+                        </div>
+                        <input class="mini-inp" type="number" id="est_${b.id}" placeholder="Est h" min="0" step="0.5"
+                            title="Original Estimate (hours)" value="${bd.est||''}"
+                            onclick="event.stopPropagation()" onchange="onEstChange(${b.id})">
+                    </div>
+                </div>
+            </td>`;
+        return `<tr id="row_${b.id}">
+            <td class="cell-num c-num col-sticky" style="left:0;">${idx+1}</td>
+            <td class="cell-id c-id col-sticky" style="left:36px;"><a href="${b.url}" target="_blank">#${b.id}</a></td>
+            <td class="cell-title c-title col-sticky" style="left:94px;" title="${escHtml(b.title)}">${escHtml(b.title)}</td>
+            <td class="cell-state"><span class="sp sp-resolved">${escHtml(b.state)}</span></td>
+            <td class="cell-tag">${b.severity?('<span class="badge '+sevClass(b.severity)+'" style="font-size:.55rem;padding:2px 7px;">'+escHtml(b.severity)+'</span>'):'<span style="color:var(--td);">—</span>'}</td>
+            <td class="cell-res" style="text-align:left;font-size:.66rem;color:var(--ts);white-space:nowrap;">${escHtml(b.createdByName||'—')}</td>
+            ${cell}
+        </tr>`;
+    }).join('');
+
+    // Restore checked state
+    filteredBugs.forEach(b=>syncRow(b.id));
+    updateSummary();
+}
+
+/* ═══════════════════════════
+   CELL INTERACTIONS
+═══════════════════════════ */
+function toggleCell(bugId,event){
+    const cb=document.getElementById('cb_'+bugId);
+    if(!cb) return;
+    cb.checked=!cb.checked;
+    onCellChange(bugId);
+}
+function onCellChange(bugId){
+    const cb=document.getElementById('cb_'+bugId);
+    if(!cb) return;   // exists / disabled rows have no checkbox
+    const cell=document.getElementById('tc_'+bugId);
+    if(!bugData[bugId]) bugData[bugId]={sel:false,tester:(bugMap[bugId]||{}).createdByValue||'',est:0};
+    bugData[bugId].sel=cb.checked;
+    // persist tester/est currently in the inputs
+    const ts=document.getElementById('tester_'+bugId); if(ts) bugData[bugId].tester=ts.value;
+    const es=document.getElementById('est_'+bugId);    if(es) bugData[bugId].est=parseFloat(es.value)||0;
+    if(cell) cell.classList.toggle('on',cb.checked);
+    updateSummary();
+}
+function onEstChange(bugId){
+    const es=document.getElementById('est_'+bugId);
+    if(bugData[bugId]&&es) bugData[bugId].est=parseFloat(es.value)||0;
+    updateSummary();
+}
+function syncRow(bugId){
+    const bd=bugData[bugId]||{sel:false};
+    const cb=document.getElementById('cb_'+bugId);
+    const cell=document.getElementById('tc_'+bugId);
+    if(!cb||!cell) return;
+    cb.checked=!!bd.sel;
+    cell.classList.toggle('on',!!bd.sel);
+    const ts=document.getElementById('tester_'+bugId); if(ts&&bd.tester) ts.value=bd.tester;
+    const es=document.getElementById('est_'+bugId);    if(es&&bd.est)    es.value=bd.est;
+}
+function selectAllBugs(state){
+    filteredBugs.forEach(b=>{
+        if(!bugData[b.id]) bugData[b.id]={sel:false,tester:b.createdByValue||'',est:0};
+        bugData[b.id].sel = state ? isCellSelectable(b) : false;
+        syncRow(b.id);
+    });
+    updateSummary();
+}
+function updateSummary(){
+    const n=filteredBugs.filter(b=>(bugData[b.id]||{}).sel).length;
+    document.getElementById('smBugs').textContent=filteredBugs.length;
+    document.getElementById('smTasks').textContent=n;
+}
+
+/* ═══════════════════════════
+   FILTER
+═══════════════════════════ */
+function filterBugs(){
+    const q=(document.getElementById('bugSearch')?.value||'').trim().toLowerCase();
+    filteredBugs=bugs.filter(b=>{
+        if(q && !(b.title.toLowerCase().includes(q)||String(b.id).includes(q)||String(b.createdByName||'').toLowerCase().includes(q))) return false;
+        return true;
+    });
+    renderBugGrid();
+}
+function refreshBugs(){ loadBugs({silent:true}); }
+
+/* ═══════════════════════════
+   GENERATE — PREVIEW FIRST
+═══════════════════════════ */
+let _pendingTasks=[];
+function markTitleEdited(el){ if(el) el.dataset.auto='0'; }
+
+function generateAllTasks(){
+    // Persist current inputs
+    filteredBugs.forEach(b=>onCellChange(b.id));
+    const toProcess=filteredBugs.filter(b=>(bugData[b.id]||{}).sel && isCellSelectable(b));
+    if(!toProcess.length){showToast('❌ No bugs selected','err');return;}
+
+    _pendingTasks=toProcess.map(b=>{
+        const bd=bugData[b.id]||{};
+        const est=parseFloat(bd.est)||0;
+        return {
+            bugId:b.id, bugTitle:b.title, bugArea:b.area,
+            iterPath: currentIterationPath || b.iter,   // team's active sprint (fallback: bug's own)
+            assignedTo:bd.tester||b.createdByValue||'',
+            origEst:est, remWork:est
+        };
+    });
+
+    const tbody=_pendingTasks.map((t,n)=>{
+        const iterShort=t.iterPath.split('\\').pop();
+        const bug=bugMap[t.bugId]||{};
+        const defaultTitle=retestTitle({id:t.bugId,title:t.bugTitle});
+        const atOpts=testerOptionsHtml(bug,t.assignedTo);
+        return '<tr>'+
+        '<td style="text-align:center;color:var(--td);width:32px;">'+(n+1)+'</td>'+
+        '<td style="width:64px;"><a href="'+tfsUrl+'/_workitems/edit/'+t.bugId+'" target="_blank" style="color:var(--acc);font-weight:600;text-decoration:none;">#'+t.bugId+'</a></td>'+
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+escHtml(t.bugTitle)+'">'+escHtml(t.bugTitle)+'</td>'+
+        '<td><strong>'+escHtml(RETEST_LABEL)+'</strong></td>'+
+        '<td><span class="d-chip d-test">'+escHtml(RETEST_DISC)+'</span></td>'+
+        '<td style="white-space:nowrap;">'+RETEST_TAGS.split(';').map(function(tg){return '<span class="tp tp-del" style="margin-right:3px;">'+escHtml(tg.trim())+'</span>';}).join('')+'</td>'+
+        '<td style="white-space:nowrap;font-size:.68rem;color:var(--ts);">'+escHtml(RETEST_EXEC)+'</td>'+
+        '<td><select class="pv-sel" id="pa_'+n+'">'+atOpts+'</select></td>'+
+        '<td><input class="pv-num" type="number" id="pe_'+n+'" value="'+(t.origEst||'')+'" placeholder="h" min="0" step="0.5"></td>'+
+        '<td style="width:110px;" title="'+escHtml(t.iterPath)+'">'+escHtml(iterShort)+'</td>'+
+        '<td style="min-width:260px;"><input class="title-edit" type="text" id="pt_'+n+'" data-auto="1" oninput="markTitleEdited(this)" value="'+escAttr(defaultTitle)+'" title="Click to edit task title"></td>'+
+        '</tr>';
+    }).join('');
+
+    document.getElementById('previewBody').innerHTML=
+        '<div style="overflow-x:auto;">'+
+        '<table class="preview-tbl">'+
+        '<thead><tr>'+
+        '<th style="width:32px;">#</th>'+
+        '<th style="width:64px;">Bug ID</th>'+
+        '<th>Bug</th>'+
+        '<th>Task Type</th>'+
+        '<th>Discipline</th>'+
+        '<th>Tags</th>'+
+        '<th>Exec Type</th>'+
+        '<th>Tester <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
+        '<th style="width:70px;">Orig Est <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
+        '<th style="width:110px;">Iteration</th>'+
+        '<th>Task Title <span style="font-weight:400;color:var(--tm);">(edit)</span></th>'+
+        '</tr></thead>'+
+        '<tbody>'+tbody+'</tbody>'+
+        '</table></div>';
+
+    document.getElementById('previewStat').innerHTML=
+        '<strong>'+_pendingTasks.length+'</strong> Bug Retesting task(s) will be created in <strong>'+escHtml(currentIterationName||(currentIterationPath?currentIterationPath.split('\\').pop():'each bug’s own sprint'))+'</strong>';
+
+    document.getElementById('previewModal').classList.add('open');
+}
+
+function closePreview(){
+    document.getElementById('previewModal').classList.remove('open');
+}
+
+async function confirmGenerate(){
+    if(!_pendingTasks.length) return;
+
+    _pendingTasks.forEach((t,n)=>{
+        const titleInp=document.getElementById('pt_'+n);
+        const atInp=document.getElementById('pa_'+n);
+        const estInp=document.getElementById('pe_'+n);
+        if(atInp) t.assignedTo=atInp.value||'';
+        t.customTitle=(titleInp?.value.trim())||retestTitle({id:t.bugId,title:t.bugTitle});
+        const est=parseFloat(estInp?.value);
+        if(!isNaN(est)&&est>=0){ t.origEst=est; t.remWork=est; }
+    });
+
+    closePreview();
+
+    const btn=document.getElementById('genAllBtn');
+    btn.disabled=true; btn.textContent='⏳ Creating…';
+
+    const logEl=document.getElementById('genLog');
+    logEl.innerHTML=''; logEl.classList.add('vis');
+    addLog(logEl,'Starting: '+_pendingTasks.length+' Bug Retesting task(s)…','info');
+
+    await resolveExecTypeField();
+    if(EXEC_TYPE_FIELD){
+        addLog(logEl,'ℹ️ Task Execution Type → field <code>'+escHtml(EXEC_TYPE_FIELD)+'</code> = <em>'+escHtml(RETEST_EXEC)+'</em>','info');
+    }else{
+        addLog(logEl,'⚠️ Field "'+escHtml(EXEC_TYPE_DISPLAY)+'" not found — tasks will be created WITHOUT it.','warn');
+    }
+
+    const banner=document.getElementById('successBanner');
+    banner.classList.remove('vis');
+
+    let totalOk=0, totalFail=0;
+
+    for(const t of _pendingTasks){
+        try{
+            const body=[
+                {op:'add',path:'/fields/System.Title',                     value:t.customTitle},
+                {op:'add',path:'/fields/System.IterationPath',              value:t.iterPath},
+                {op:'add',path:'/fields/System.AreaPath',                   value:t.bugArea},
+                {op:'add',path:'/fields/Microsoft.VSTS.Common.Discipline',  value:RETEST_DISC},
+                {op:'add',path:'/fields/System.Tags',                       value:RETEST_TAGS},
+            ];
+            if(EXEC_TYPE_FIELD) body.push({op:'add',path:'/fields/'+EXEC_TYPE_FIELD,value:RETEST_EXEC});
+            if(t.assignedTo) body.push({op:'add',path:'/fields/System.AssignedTo',value:t.assignedTo});
+            if(t.origEst)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.OriginalEstimate',value:t.origEst});
+            if(t.remWork)    body.push({op:'add',path:'/fields/Microsoft.VSTS.Scheduling.RemainingWork',   value:t.remWork});
+            body.push({op:'add',path:'/relations/-',value:{rel:'System.LinkTypes.Hierarchy-Reverse',url:tfsUrl+'/_apis/wit/workitems/'+t.bugId}});
+
+            const res=await fetch(tfsUrl+'/'+currentProject+'/_apis/wit/workitems/$Task?api-version=5.0',
+                {method:'POST',headers:{...hdrs,'Content-Type':'application/json-patch+json'},body:JSON.stringify(body)});
+            if(!res.ok){const tx=await res.text();throw new Error('HTTP '+res.status+': '+tx.substring(0,120));}
+            const rd2=await res.json();
+            totalOk++;
+            addLog(logEl,'✅ <a href="'+tfsUrl+'/_workitems/edit/'+rd2.id+'" target="_blank" style="color:#34d399;">#'+rd2.id+'</a> — <em>'+escHtml(t.customTitle)+'</em>','ok');
+        }catch(e){
+            totalFail++;
+            addLog(logEl,'❌ Bug #'+t.bugId+': '+escHtml(e.message),'err');
+        }
+    }
+
+    addLog(logEl,'── Done: '+totalOk+' created, '+totalFail+' failed ──',totalFail>0?'warn':'info');
+
+    if(totalFail===0){
+        banner.innerHTML='🎉 Successfully created <strong>'+totalOk+'</strong> Bug Retesting task'+(totalOk!==1?'s':'')+' — all added to TFS!';
+        banner.style.color='#34d399';banner.style.borderColor='rgba(16,185,129,.4)';banner.style.background='rgba(16,185,129,.12)';
+    } else {
+        banner.innerHTML='⚠️ <strong>'+totalOk+'</strong> created, <strong>'+totalFail+'</strong> failed — check the log above.';
+        banner.style.color='#fbbf24';banner.style.borderColor='rgba(245,158,11,.4)';banner.style.background='rgba(245,158,11,.1)';
+    }
+    banner.classList.add('vis');
+    banner.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+    showToast(totalFail===0?'🎉 '+totalOk+' retest task(s) created!':'⚠️ '+totalOk+' ok / '+totalFail+' failed',totalFail>0?'warn':'ok');
+    btn.disabled=false; btn.textContent='⚡ Generate Retesting Tasks';
+
+    // Reload so just-created retest tasks now render as "✓ exists" (disabled)
+    if(totalOk>0){ loadBugs({silent:true}); }
+}
+
+function addLog(el,msg,type){
+    const cls={ok:'log-ok',err:'log-err',info:'log-info',warn:'log-warn'}[type]||'log-info';
+    const d=document.createElement('div');d.className=cls;d.innerHTML=msg;
+    el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+
+/* ═══════════════════════════
+   SHARED HELPERS (mirrors Task Management)
+═══════════════════════════ */
+function flattenNodes(node,res=[],d=0){
+    if(!node) return res;
+    if(d>0){const raw=node.path||node.name;res.push({name:node.name,path:raw.replace(/^\\/,''),id:node.id||null});}
+    if(node.children) node.children.forEach(c=>flattenNodes(c,res,d+1));
+    return res;
+}
+function escHtml(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return escHtml(s);}
+function showLoading(m){document.getElementById('loadingText').textContent=m||'Loading…';document.getElementById('loadingOverlay').classList.add('vis');}
+function hideLoading(){document.getElementById('loadingOverlay').classList.remove('vis');}
+function setBadge(t,c){const b=document.getElementById('connBadge');b.textContent=t;b.className='badge '+c;}
+let _tt;
+function showToast(msg,type='ok'){
+    const el=document.getElementById('toast');el.innerHTML=msg;
+    const cols={ok:'rgba(16,185,129,.4)',err:'rgba(239,68,68,.4)',warn:'rgba(245,158,11,.4)',info:'rgba(99,102,241,.4)'};
+    el.style.borderColor=cols[type]||'var(--bs)';el.classList.add('show');
+    clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),4500);
+}
+function showErrorPanel(title,detail){
+    let p=document.getElementById('errPanel');
+    if(!p){p=document.createElement('div');p.id='errPanel';
+        p.style.cssText='position:fixed;bottom:72px;right:20px;z-index:1001;max-width:500px;width:calc(100vw - 40px);'+
+            'background:var(--bg2);border:1px solid rgba(239,68,68,.5);border-radius:10px;padding:14px 16px;font-size:.73rem;color:#fca5a5;box-shadow:0 8px 28px var(--sh);';
+        document.body.appendChild(p);}
+    p.innerHTML='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">'+
+        '<strong style="color:#f87171;">❌ '+escHtml(title)+'</strong>'+
+        '<button onclick="this.parentElement.parentElement.style.display=\'none\'" style="background:none;border:none;cursor:pointer;color:var(--tm);font-size:1rem;padding:0;">✕</button></div>'+
+        '<pre style="font-size:.62rem;color:var(--tm);white-space:pre-wrap;word-break:break-all;background:var(--inp);border-radius:5px;padding:7px;max-height:160px;overflow-y:auto;margin:0;">'+escHtml(detail)+'</pre>';
+    p.style.display='block';
+}
+</script>
+</body>
+</html>
