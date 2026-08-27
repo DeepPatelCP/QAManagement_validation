@@ -1567,36 +1567,46 @@ function backToSprint(){
     document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
+/* Iteration dropdown — shows only the 12 most recent iterations (newest first),
+   with the active one labelled "— current" and pre-selected. Dates come from the
+   iteration classification nodes (see flattenNodes). Unified with bug-management.html. */
 function buildIterSelect(){
     const sel=document.getElementById('iterSelect');
     if(!allIterations.length){sel.innerHTML='<option value="">No iterations found</option>';return;}
-    const groups={};
-    const rePi=/pi[-_\s]?\d{4}[-_\s]?\d+/i;
-    const reQ=/q[1-4][-_\s]?\d{4}|\d{4}[-_\s]?q[1-4]/i;
-    allIterations.forEach(it=>{
-        const m=it.name.match(rePi)||it.name.match(reQ)||(it.path.split('\\').length>2?[it.path.split('\\').slice(1,-1).join(' ')]:null);
-        const gk=m?m[0].toUpperCase().replace(/[-_\s]+/g,' '):'Other';
-        if(!groups[gk])groups[gk]=[];
-        groups[gk].push(it);
+    const now=Date.now();
+    // Attach a sortable date + "current" flag (today within [start,finish]) to each iteration.
+    const items=allIterations.map(it=>{
+        const sd=it.startDate?new Date(it.startDate).getTime():null;
+        const fd=it.finishDate?new Date(it.finishDate).getTime():null;
+        return {...it,_sort:(sd!=null?sd:fd),_isCurrent:(sd!=null&&fd!=null&&now>=sd&&now<=fd)};
     });
-    const gKeys=Object.keys(groups).sort((a,b)=>{
-        const na=a.replace(/\D/g,''),nb=b.replace(/\D/g,'');
-        return (parseInt(nb)||0)-(parseInt(na)||0);
-    });
+    const anyDates=items.some(x=>x._sort!=null);
+    // Newest first by start date; when no dates exist at all, assume API order is chronological.
+    const ordered=anyDates
+        ? items.slice().sort((a,b)=>{
+            if(a._sort==null&&b._sort==null) return 0;
+            if(a._sort==null) return 1;
+            if(b._sort==null) return -1;
+            return b._sort-a._sort;
+          })
+        : items.slice().reverse();
+    // Keep only the 12 most recent iterations.
+    const recent=ordered.slice(0,12);
+    // Always surface the current iteration, even if it falls outside the latest 12.
+    const currentItem=items.find(x=>x._isCurrent);
+    if(currentItem&&!recent.some(x=>x.path===currentItem.path)) recent.unshift(currentItem);
+    // Default selection: the current iteration, else the most recent one.
+    const defaultPath=(currentItem&&currentItem.path)||(recent[0]&&recent[0].path)||'';
     sel.innerHTML='<option value="">-- Select sprint --</option>';
-    let firstSet=false;
-    gKeys.forEach((gk,gi)=>{
-        const grp=document.createElement('optgroup');
-        grp.label=(gi===0?'★ Latest: ':'')+gk;
-        groups[gk].forEach((it,ii)=>{
-            const opt=document.createElement('option');
-            opt.value=it.path;
-            opt.textContent=it.name;
-            if(!firstSet){opt.selected=true;selectedIter=it.path;firstSet=true;}
-            grp.appendChild(opt);
-        });
-        sel.appendChild(grp);
+    selectedIter='';
+    recent.forEach(it=>{
+        const opt=document.createElement('option');
+        opt.value=it.path;
+        opt.textContent=it.name+(it._isCurrent?'  — current':'');
+        if(it.path===defaultPath){opt.selected=true;selectedIter=it.path;}
+        sel.appendChild(opt);
     });
+    if(!selectedIter&&recent[0]){selectedIter=recent[0].path;sel.value=recent[0].path;}
 }
 function selectIter(path){selectedIter=path;}
 
@@ -3002,7 +3012,11 @@ function stCopyA(tblId){
 
 function flattenNodes(node,res=[],d=0){
     if(!node) return res;
-    if(d>0){const raw=node.path||node.name;res.push({name:node.name,path:raw.replace(/^\\/,''),id:node.id||null});}
+    if(d>0){
+        const raw=node.path||node.name;
+        const a=node.attributes||{};
+        res.push({name:node.name,path:raw.replace(/^\\/,''),id:node.id||null,startDate:a.startDate||null,finishDate:a.finishDate||null});
+    }
     if(node.children) node.children.forEach(c=>flattenNodes(c,res,d+1));
     return res;
 }
