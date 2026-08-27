@@ -1671,7 +1671,7 @@ function renderBugGrid(){
                         <div class="mini-sel-wrap">
                             <select class="mini-sel" id="tester_${b.id}" onclick="event.stopPropagation()" title="Tester">${testerOptionsHtml(b,bd.tester)}</select>
                         </div>
-                        <input class="mini-inp" type="number" id="est_${b.id}" placeholder="Comp h" min="0" step="0.5"
+                        <input class="mini-inp" type="number" id="est_${b.id}" placeholder="Comp h" min="0" step="0.25"
                             title="Completed Work (hours)" value="${bd.completed||''}"
                             onclick="event.stopPropagation()" onchange="onEstChange(${b.id})">
                     </div>
@@ -1793,7 +1793,7 @@ function generateAllTasks(){
         '<td style="white-space:nowrap;">'+RETEST_TAGS.split(';').map(function(tg){return '<span class="tp tp-del" style="margin-right:3px;">'+escHtml(tg.trim())+'</span>';}).join('')+'</td>'+
         '<td style="white-space:nowrap;font-size:.68rem;color:var(--ts);">'+escHtml(RETEST_EXEC)+'</td>'+
         '<td><select class="pv-sel" id="pa_'+n+'">'+atOpts+'</select></td>'+
-        '<td><input class="pv-num" type="number" id="pe_'+n+'" value="'+(t.completed||'')+'" placeholder="h" min="0" step="0.5"></td>'+
+        '<td><input class="pv-num" type="number" id="pe_'+n+'" value="'+(t.completed||'')+'" placeholder="h" min="0" step="0.25"></td>'+
         '<td style="width:110px;" title="'+escHtml(t.iterPath)+'">'+escHtml(iterShort)+'</td>'+
         '<td style="min-width:260px;"><input class="title-edit" type="text" id="pt_'+n+'" data-auto="1" oninput="markTitleEdited(this)" value="'+escAttr(defaultTitle)+'" title="Click to edit task title"></td>'+
         '</tr>';
