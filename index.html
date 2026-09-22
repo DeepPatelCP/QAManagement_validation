@@ -1381,7 +1381,9 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
 const TASK_TYPES=[
     {name:'TC Generation',         disc:'Test', execType:'AI-Test-Test Case Generation'},
     {name:'TC Review',             disc:'Test', execType:'AI-Test\u2013Test Case Review'},
-    {name:'L2',                    disc:'Test'},
+    // L2 is a multi-task type: one task per chosen Test member (testerPick, like
+    // Performance Testing). Titles stay requirement-based ("L2 - {Req title}").
+    {name:'L2',                    disc:'Test', testerPick:true},
     {name:'L3',                    disc:'Test'},
     {name:'Test Data Preparation', disc:'Test', execType:'AI-Test-Test Data Preparation'},
     // Regression group — always shown last; these also get the "Regression" tag.
@@ -1487,6 +1489,7 @@ let requirements=[], filteredReqs=[];
 let reqData={};
 let reqMap={};              // reqId -> requirement object (for quick lookups)
 let existingTaskTypes={};   // reqId -> Set(ttIdx) of task types already created (open) this sprint
+let existingTaskTesters={};  // reqId -> { ttIdx: Set(identityKey) } — which testers already have an open task (per-tester types)
 const _EMPTY_SET=new Set();
 
 /* Tester/member details are fetched from sprint capacity exactly ONCE per
@@ -1549,15 +1552,93 @@ function detectTaskType(title){
     });
     return best;
 }
+/* Index of the ALM task type in TASK_TYPES (-1 if none). */
+const ALM_TT_INDEX=TASK_TYPES.findIndex(t=>t&&t.alm);
+/* Is this work item an ALM task? Prefix-based detectTaskType() misses ALM tasks
+   whose title doesn't lead with "ALM" — e.g. the per-member "Support - ALM
+   Activities PI-2026-5 - PI-2026-5_2" tasks. Per the workflow, a task counts as
+   ALM when it carries the exact tag "ALM" (case-insensitive) OR its title contains
+   the standalone word "ALM" (case-insensitive; \bALM\b so names like "Salman"
+   don't false-match). */
+function isAlmTaskWorkItem(title,tags){
+    const tagHit=String(tags||'').split(';').some(t=>t.trim().toLowerCase()==='alm');
+    const titleHit=/\balm\b/i.test(String(title||''));
+    return tagHit||titleHit;
+}
+/* Classify an existing task to a TASK_TYPES index, preferring the robust ALM
+   check over the title-prefix heuristic so per-member ALM tasks are always
+   attributed to the ALM column (and to their assignee). */
+function classifyExistingTask(title,tags){
+    if(ALM_TT_INDEX>=0 && isAlmTaskWorkItem(title,tags)) return ALM_TT_INDEX;
+    return detectTaskType(title);
+}
+
+/* ── PER-TESTER "already generated" matching (PT Regression / ALM) ──
+   Existing tasks are matched to capacity members by ASSIGNEE IDENTITY so a task
+   that already exists for one tester never blocks generating for the others. */
+function assignedIdentityKey(av){
+    if(!av) return '';
+    if(typeof av==='string'){
+        // "Name <unique>", "DOMAIN\login" or a plain display name
+        const m=av.match(/<([^>]+)>/);
+        if(m) return m[1].trim().toLowerCase();
+        return av.replace(/<[^>]+>/g,'').trim().toLowerCase();
+    }
+    // Azure DevOps identity object
+    return String(av.uniqueName||av.displayName||'').trim().toLowerCase();
+}
+function memberIdentityKeys(m){
+    const keys=[];
+    if(m&&m.unique) keys.push(String(m.unique).trim().toLowerCase());
+    if(m&&m.name)   keys.push(String(m.name).trim().toLowerCase());
+    return keys;
+}
+function existingTesterKeys(reqId,i){
+    const m=existingTaskTesters[reqId];
+    return (m&&m[i])?m[i]:_EMPTY_SET;
+}
+/* True if this capacity member already has an open task of type i under the req. */
+function testerHasTask(reqId,i,member){
+    const keys=existingTesterKeys(reqId,i);
+    if(!keys.size||!member) return false;
+    return memberIdentityKeys(member).some(k=>keys.has(k));
+}
+/* How many distinct testers already have an open task of type i under the req. */
+function existingTesterCount(reqId,i){
+    return existingTesterKeys(reqId,i).size;
+}
+/* How many CAPACITY members already have an open task of type i under the req.
+   Robust ALM detection attributes every ALM child task (incl. non-Test assignees),
+   so the "done" pill counts only capacity members to stay meaningful. */
+function doneTesterCount(reqId,i){
+    return memberList.filter(m=>testerHasTask(reqId,i,m)).length;
+}
+/* Capacity members that still need a task of type i for this req.
+   perMember → all members; testerPick → the currently-selected testers. */
+function missingTesters(reqId,i,tt){
+    let candidates;
+    if(tt.perMember){
+        candidates=memberList;
+    }else{
+        const sel=effectiveTesters(reqId,i,tt)||[];
+        candidates=memberList.filter(m=>sel.includes(m.value));
+    }
+    return candidates.filter(m=>!testerHasTask(reqId,i,m));
+}
 
 /* Whether a requirement×task-type cell can be selected for creation.
    false → the type doesn't match the req's regression state (blank cell),
-           or a task of that type already exists (open) this sprint (disabled cell). */
+           or a task of that type already exists (open) this sprint (disabled cell).
+   For per-tester types (PT Regression / ALM), the cell stays selectable while
+   any tester still needs a task, so the gaps can be filled. */
 function isCellSelectable(r,i){
     if(!r) return false;
     const tt=TASK_TYPES[i];
     if(!ttEligibleFor(tt,reqCategory(r))) return false;
-    if((existingTaskTypes[r.id]||_EMPTY_SET).has(i)) return false;
+    if((existingTaskTypes[r.id]||_EMPTY_SET).has(i)){
+        if((tt.testerPick||tt.perMember)&&missingTesters(r.id,i,tt).length>0) return true;
+        return false;
+    }
     return true;
 }
 
@@ -1847,6 +1928,7 @@ async function loadRequirements(opts){
 ═══════════════════════════ */
 async function loadExistingTasks(iterPath, area, reqIds){
     existingTaskTypes={};
+    existingTaskTesters={};
     if(!iterPath||!currentProject||!reqIds||!reqIds.length) return;
     try{
         const iterSafe=wiqlEscPath(iterPath);
@@ -1873,10 +1955,21 @@ async function loadExistingTasks(iterPath, area, reqIds){
                     if(!parentRel) return;
                     const parentId=parseInt(parentRel.url.split('/').pop());
                     if(!reqIdSet.has(parentId)) return;
-                    const ti=detectTaskType((w.fields||{})['System.Title']||'');
+                    const flds=w.fields||{};
+                    const ti=classifyExistingTask(flds['System.Title']||'',flds['System.Tags']||'');
                     if(ti<0) return;
                     if(!existingTaskTypes[parentId]) existingTaskTypes[parentId]=new Set();
                     existingTaskTypes[parentId].add(ti);
+                    // Per-tester tracking for PT Regression / ALM (matched by assignee identity)
+                    const tt=TASK_TYPES[ti];
+                    if(tt&&(tt.testerPick||tt.perMember)){
+                        const key=assignedIdentityKey(flds['System.AssignedTo']);
+                        if(key){
+                            if(!existingTaskTesters[parentId]) existingTaskTesters[parentId]={};
+                            if(!existingTaskTesters[parentId][ti]) existingTaskTesters[parentId][ti]=new Set();
+                            existingTaskTesters[parentId][ti].add(key);
+                        }
+                    }
                 });
             }catch(e2){ console.warn('[TC] existing-tasks relations error:',e2.message); }
         }
@@ -1932,13 +2025,23 @@ function renderExcel(){
             if(!eligible){
                 return `<td class="tc tc-na" title="Not applicable — this requirement is ${naMsg}"><span class="tc-na-dash">▨</span></td>`;
             }
+            const perTester=(tt.testerPick||tt.perMember);
+            let missCount=null;
             if(existSet.has(i)){
-                return `<td class="tc tc-exists" title="A '${escAttr(tt.name)}' task already exists (open) in this sprint for requirement #${r.id}">
+                // Per-tester types stay open while some testers still need a task;
+                // everything else (and fully-covered per-tester cells) render disabled.
+                if(perTester){
+                    missCount=missingTesters(r.id,i,tt).length;
+                }
+                if(!perTester||missCount===0){
+                    return `<td class="tc tc-exists" title="A '${escAttr(tt.name)}' task already exists (open) in this sprint for requirement #${r.id}">
                     <div class="tc-inner">
                         <input type="checkbox" class="tc-cb" disabled checked>
                         <span class="tc-exists-badge">✓ exists</span>
                     </div>
                 </td>`;
+                }
+                // else: partial → fall through to an active cell for the missing testers
             }
             // Three cell layouts:
             //   • testerPick (PT / Performance) → estimate + a per-cell tester picker
@@ -1948,14 +2051,17 @@ function renderExcel(){
             const estInp=`<input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h${perEa}" min="0" step="0.5"
                         title="Original Estimate${perEa?' per tester':''} (hours)"
                         onclick="event.stopPropagation()" onchange="setCellOe(${r.id},${i},this.value)">`;
+            const doneCount=perTester?doneTesterCount(r.id,i):0;
+            const donePill=doneCount?`<span class="tc-done-badge" title="${doneCount} tester(s) already have an open task — only the remaining ones will be created" style="font-size:.5rem;color:var(--acc);font-weight:700;white-space:nowrap;margin-top:1px;">✓ ${doneCount} done</span>`:'';
             let fieldsHtml;
             if(tt.testerPick){
                 fieldsHtml=estInp+
-                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`;
+                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`+donePill;
             }else if(tt.perMember){
+                const newCount=(missCount!=null)?missCount:nTesters;
                 fieldsHtml=estInp+
-                   `<div class="tc-permember" style="font-size:.52rem;color:${nTesters?'var(--acc)':'#f87171'};font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;"
-                        title="One task will be created per Test-discipline member from sprint capacity">${nTesters?('× '+nTesters+' tester'+(nTesters!==1?'s':'')):'no testers'}</div>`;
+                   `<div class="tc-permember" style="font-size:.52rem;color:${newCount?'var(--acc)':'#f87171'};font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;"
+                        title="One task will be created per Test-discipline member from sprint capacity${doneCount?(' — '+doneCount+' already have a task'):''}">${newCount?('× '+newCount+(doneCount?' new':' tester'+(newCount!==1?'s':''))):'all done'}</div>`+donePill;
             }else{
                 fieldsHtml=`<div class="mini-sel-wrap">
                         <select class="mini-sel" id="at_${r.id}_${i}" onclick="event.stopPropagation()" onchange="setCellAt(${r.id},${i},this.value)" title="Assigned To">${memberOpts}</select>
@@ -2046,9 +2152,16 @@ function updateTesterBtn(reqId,i){
 function testerPopHtml(reqId,i){
     if(!memberList.length) return '<div style="padding:8px 10px;color:#f87171;font-size:.64rem;">No testers loaded</div>';
     const sel=getCellTesters(reqId,i);
-    const allOn=memberList.every(m=>sel.has(m.value));
-    return '<label class="tester-item select-all"><input type="checkbox" '+(allOn?'checked':'')+' onchange="toggleAllTesters('+reqId+','+i+',this.checked)"> Select All</label>'+
-        memberList.map(m=>'<label class="tester-item"><input type="checkbox" value="'+escAttr(m.value)+'" '+(sel.has(m.value)?'checked':'')+' onchange="onTesterToggle('+reqId+','+i+',this.value,this.checked)"> '+escHtml(m.name)+'</label>').join('');
+    // Testers that already have an open task of this type can't be re-selected.
+    const selectable=memberList.filter(m=>!testerHasTask(reqId,i,m));
+    const allOn=selectable.length>0&&selectable.every(m=>sel.has(m.value));
+    return '<label class="tester-item select-all"><input type="checkbox" '+(allOn?'checked':'')+(selectable.length?'':' disabled')+' onchange="toggleAllTesters('+reqId+','+i+',this.checked)"> Select All</label>'+
+        memberList.map(m=>{
+            if(testerHasTask(reqId,i,m)){
+                return '<label class="tester-item" style="opacity:.55;cursor:default;" title="Already has an open task"><input type="checkbox" checked disabled> '+escHtml(m.name)+' <span style="color:var(--acc);font-size:.55rem;font-weight:700;">✓ has task</span></label>';
+            }
+            return '<label class="tester-item"><input type="checkbox" value="'+escAttr(m.value)+'" '+(sel.has(m.value)?'checked':'')+' onchange="onTesterToggle('+reqId+','+i+',this.value,this.checked)"> '+escHtml(m.name)+'</label>';
+        }).join('');
 }
 let _testerPop={reqId:null,i:null};
 function openTesterPop(reqId,i,ev){
@@ -2070,12 +2183,13 @@ function onTesterToggle(reqId,i,val,ch){
     ch?s.add(val):s.delete(val);
     const pop=document.getElementById('testerPop');
     const sa=pop&&pop.querySelector('.select-all input');
-    if(sa) sa.checked=memberList.every(m=>s.has(m.value));
+    const selectable=memberList.filter(m=>!testerHasTask(reqId,i,m));
+    if(sa) sa.checked=selectable.length>0&&selectable.every(m=>s.has(m.value));
     updateTesterBtn(reqId,i); updateSummary();
 }
 function toggleAllTesters(reqId,i,ch){
     const s=getCellTesters(reqId,i);
-    s.clear(); if(ch) memberList.forEach(m=>s.add(m.value));
+    s.clear(); if(ch) memberList.filter(m=>!testerHasTask(reqId,i,m)).forEach(m=>s.add(m.value));
     const pop=document.getElementById('testerPop');
     if(pop&&_testerPop.reqId===reqId&&_testerPop.i===i) pop.innerHTML=testerPopHtml(reqId,i);
     updateTesterBtn(reqId,i); updateSummary();
@@ -2131,7 +2245,8 @@ function updateSummary(){
         sel.forEach(i=>{
             const tt=TASK_TYPES[i]; if(!tt) return;
             if(tt.perMember||tt.testerPick){
-                const n=effectiveTesters(r.id,i,tt).length;
+                // Count only testers who don't already have a task (matches what gets created)
+                const n=missingTesters(r.id,i,tt).length;
                 taskCount += n || (memberList.length?0:1);   // fallback: 1 unassigned when no testers loaded
             } else taskCount += 1;
         });
@@ -2308,6 +2423,34 @@ function onPreviewAssignee(n){
     }
 }
 
+/* Is this task type a multi-task (per-tester) type? testerPick → user-chosen Test
+   members (L2, PT Regression, Performance Testing); perMember → every Test member
+   (ALM). Both create one task per tester; everything else is single-task. */
+function isPerTesterType(tt){ return !!(tt && (tt.perMember || tt.testerPick)); }
+
+/* THE common, parameterized task-builder for ONE requirement×task-type cell.
+   Single vs multi-task is decided purely by the task type passed in, so every
+   task type — L2, ALM, Performance, PT Regression, single types — flows through
+   this one path:
+     • multi-task (perMember / testerPick) → one task per effective tester,
+       skipping any tester who already has an open task of this type (gap-fill);
+       if no capacity members are loaded, a single unassigned task is created.
+     • single-task → one task with the chosen assignee.
+   `base` holds the shared field values; only `assignedTo` differs per task. */
+function buildTasksForCell(reqId, i, tt, base, rawAt){
+    if(!isPerTesterType(tt)) return [{...base, assignedTo:rawAt||''}];
+    let testers=effectiveTesters(reqId,i,tt)||[];
+    if((existingTaskTesters[reqId]||{})[i]){
+        testers=testers.filter(v=>{
+            const m=memberList.find(mm=>mm.value===v);
+            return m ? !testerHasTask(reqId,i,m) : true;   // fill gaps only
+        });
+    }
+    if(testers.length) return testers.map(v=>({...base, assignedTo:v}));
+    if(!memberList.length) return [{...base, assignedTo:''}];  // no capacity → one unassigned
+    return [];   // members loaded but all selected already have a task → nothing to create
+}
+
 function generateAllTasks(){
     const toProcess=filteredReqs.filter(r=>(reqData[r.id]||{sel:new Set()}).sel.size>0);
     if(!toProcess.length){showToast('❌ No tasks selected','err');return;}
@@ -2330,15 +2473,8 @@ function generateAllTasks(){
                 origEst,
                 remWork:origEst,   // Remaining = Original Estimate
             };
-            if(tt.perMember||tt.testerPick){
-                // One task per selected/auto Test-discipline member from sprint capacity
-                const testers=effectiveTesters(req.id,i,tt);
-                if(testers.length){ testers.forEach(v=>_pendingTasks.push({...base, assignedTo:v})); }
-                else if(!memberList.length){ _pendingTasks.push({...base, assignedTo:''}); }
-                // else: members loaded but user selected none → skip this cell
-            }else{
-                _pendingTasks.push({...base, assignedTo:rawAt||''});
-            }
+            // Single common path — task type drives single vs per-tester creation.
+            _pendingTasks.push(...buildTasksForCell(req.id, i, tt, base, rawAt));
         }
     }
 
