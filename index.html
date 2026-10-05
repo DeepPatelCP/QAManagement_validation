@@ -532,6 +532,8 @@ body.light .th-vert.d-ana  .th-vert-inner{color:#92400e;}
 .cell-id a{color:var(--acc);font-weight:700;text-decoration:none;font-family:'Space Mono',monospace;font-size:.68rem;}
 .cell-id a:hover{text-decoration:underline;}
 .cell-title{padding:5px 8px !important;color:var(--ts);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem;}
+.wk-badge{display:inline-block;font-size:.58rem;font-weight:700;color:var(--acc);background:rgba(56,189,248,.12);border:1px solid var(--bs);border-radius:4px;padding:0 5px;margin-right:5px;white-space:nowrap;vertical-align:middle;letter-spacing:.02em;}
+body.light .wk-badge{background:rgba(2,132,199,.10);}
 .cell-state{padding:4px 6px !important;text-align:center;}
 .cell-tag{padding:4px 6px !important;}
 .cell-res{padding:4px 6px !important;text-align:center;}
@@ -1513,6 +1515,14 @@ function isRegressionReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.
 /* A requirement counts as "ALM" when it carries the exact tag 'ALM'. */
 function isAlmReq(r){return String((r&&r.tags)||'').split(';').some(t=>t.trim().toLowerCase()==='alm');}
 
+/* Week number from a requirement's tags ("Week 1", "week2", "Wk-3", …), or null
+   when none is tagged. Drives the inline week pill and the week-based sort. */
+function reqWeekNum(r){
+    const m=String((r&&r.tags)||'').match(/\b(?:week|wk)\s*-?\s*(\d{1,3})\b/i);
+    return m?parseInt(m[1],10):null;
+}
+function reqWeekLabel(r){ const n=reqWeekNum(r); return n!=null?('Week '+n):''; }
+
 /* Which task-type family a requirement belongs to. ALM takes precedence over
    Regression, which takes precedence over the normal (delivery) family. */
 function reqCategory(r){ if(isAlmReq(r)) return 'alm'; if(isRegressionReq(r)) return 'reg'; return 'normal'; }
@@ -1599,6 +1609,11 @@ function existingTesterCount(reqId,i){
 function doneTesterCount(reqId,i){
     return memberList.filter(m=>testerHasTask(reqId,i,m)).length;
 }
+/* Capacity members who still have NO task of type i — selection-independent, so a
+   cell stays workable whenever anyone remains, regardless of the current picker. */
+function openTesterSlots(reqId,i){
+    return memberList.filter(m=>!testerHasTask(reqId,i,m)).length;
+}
 /* Capacity members that still need a task of type i for this req.
    perMember → all members; testerPick → the currently-selected testers. */
 function missingTesters(reqId,i,tt){
@@ -1622,7 +1637,7 @@ function isCellSelectable(r,i){
     const tt=TASK_TYPES[i];
     if(!ttEligibleFor(tt,reqCategory(r))) return false;
     if((existingTaskTypes[r.id]||_EMPTY_SET).has(i)){
-        if((tt.testerPick||tt.perMember)&&missingTesters(r.id,i,tt).length>0) return true;
+        if((tt.testerPick||tt.perMember)&&openTesterSlots(r.id,i)>0) return true;
         return false;
     }
     return true;
@@ -2019,14 +2034,11 @@ function renderExcel(){
                 return `<td class="tc tc-na" title="Not applicable — this requirement is ${naMsg}"><span class="tc-na-dash">▨</span></td>`;
             }
             const perTester=(tt.testerPick||tt.perMember);
-            let missCount=null;
             if(existSet.has(i)){
-                // Per-tester types stay open while some testers still need a task;
+                // Per-tester types stay open while any member still needs a task;
                 // everything else (and fully-covered per-tester cells) render disabled.
-                if(perTester){
-                    missCount=missingTesters(r.id,i,tt).length;
-                }
-                if(!perTester||missCount===0){
+                const openSlots=perTester?openTesterSlots(r.id,i):0;
+                if(!perTester||openSlots===0){
                     return `<td class="tc tc-exists" title="A '${escAttr(tt.name)}' task already exists (open) in this sprint for requirement #${r.id}">
                     <div class="tc-inner">
                         <input type="checkbox" class="tc-cb" disabled checked>
@@ -2051,7 +2063,7 @@ function renderExcel(){
             let fieldsHtml;
             if(tt.testerPick){
                 fieldsHtml=estInp+
-                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`;
+                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose which members get a task (none selected by default)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`;
             }else if(tt.perMember){
                 fieldsHtml=estInp;
             }else{
@@ -2073,7 +2085,7 @@ function renderExcel(){
         return `<tr id="row_${r.id}">
             <td class="cell-num c-num col-sticky" style="left:0;">${pageStart+idx+1}</td>
             <td class="cell-id c-id col-sticky" style="left:36px;"><a href="${r.url}" target="_blank">#${r.id}</a></td>
-            <td class="cell-title c-title col-sticky" style="left:94px;" title="${escHtml(r.title)}">${escHtml(r.title)}</td>
+            <td class="cell-title c-title col-sticky" style="left:94px;" title="${escHtml(r.title)}">${reqWeekLabel(r)?`<span class="wk-badge">${escHtml(reqWeekLabel(r))}</span>`:''}${escHtml(r.title)}</td>
             ${tcs}
         </tr>`;
     }).join('');
@@ -2113,10 +2125,11 @@ function setCellOe(reqId,i,val){
 
 /* ── PER-CELL TESTER PICKER (PT Regression / Performance Testing) ──
    The chosen testers for a testerPick cell live on reqData[reqId].testers[i]
-   (a Set of member "value" strings). Defaults to ALL current members. */
+   (a Set of member "value" strings). Starts EMPTY — the user explicitly picks who
+   gets a task; members who already have one show as checked+disabled in the pop. */
 function getCellTesters(reqId,i){
     ensureReqData(reqId);
-    if(!(i in reqData[reqId].testers)) reqData[reqId].testers[i]=new Set(memberList.map(m=>m.value));
+    if(!(i in reqData[reqId].testers)) reqData[reqId].testers[i]=new Set();
     return reqData[reqId].testers[i];
 }
 /* Member values that will actually receive a task for this cell. */
@@ -2125,15 +2138,15 @@ function effectiveTesters(reqId,i,tt){
     if(tt.testerPick){
         const rd=reqData[reqId];
         if(rd&&rd.testers&&rd.testers[i]) return [...rd.testers[i]].filter(v=>memberList.some(m=>m.value===v));
-        return memberList.map(m=>m.value);                        // default: all
+        return [];                                                // default: none until the user picks
     }
     return null;
 }
-/* Selected-tester count without creating a default set (read-only). */
+/* Count of testers the user has selected for this cell (0 by default). */
 function cellTesterCount(reqId,i){
     const rd=reqData[reqId];
     if(rd&&rd.testers&&rd.testers[i]) return [...rd.testers[i]].filter(v=>memberList.some(m=>m.value===v)).length;
-    return memberList.length;
+    return 0;
 }
 function updateTesterBtn(reqId,i){
     const el=document.getElementById('tbn_'+reqId+'_'+i);
@@ -2461,6 +2474,9 @@ function generateAllTasks(){
         }
     }
 
+    // A multi-member cell with no one picked (and no single-task cells) yields nothing.
+    if(!_pendingTasks.length){showToast('❌ Pick at least one member for the selected multi-member task(s)','err');return;}
+
     // Build preview table — Assigned To, Orig Est and Title are all editable
 
     const tbody=_pendingTasks.map((t,n)=>{
@@ -2650,6 +2666,15 @@ function applyReqFilters(){
         if(q && !(r.title.toLowerCase().includes(q)||String(r.id).includes(q))) return false;
         if(delivSel && !reqMatchesDeliv(r,delivSel)) return false;
         return true;
+    });
+    // Order by week (Week 1, Week 2, …); untagged requirements fall to the end.
+    // Array.sort is stable, so same/no-week items keep their original order.
+    filteredReqs.sort((a,b)=>{
+        const wa=reqWeekNum(a), wb=reqWeekNum(b);
+        if(wa==null&&wb==null) return 0;
+        if(wa==null) return 1;
+        if(wb==null) return -1;
+        return wa-wb;
     });
     renderExcel();
 }
