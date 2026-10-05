@@ -101,15 +101,34 @@ body.light::before{
 }
 
 /* ── TOPBAR ── */
+/* The title bar + context bar pin together as one sticky header. */
+.app-header{position:sticky;top:0;z-index:300;}
 .topbar{
   background:var(--topbar);
   border-bottom:1px solid var(--b);
   padding:10px 24px;
   display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:300;
   backdrop-filter:blur(16px);
   box-shadow:0 1px 0 var(--b),0 4px 24px rgba(0,0,0,0.25);
 }
+/* Persistent Sprint & Area control — always visible under the title bar. */
+.context-bar{
+  background:var(--topbar);
+  border-bottom:1px solid var(--b);
+  padding:9px 24px;
+  display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+  backdrop-filter:blur(16px);
+  box-shadow:0 2px 16px rgba(0,0,0,0.18);
+}
+.context-bar .field{min-width:180px;}
+.context-bar .ctx-proj{
+  display:inline-flex;align-items:center;gap:5px;align-self:center;
+  font-size:.68rem;color:var(--tm);padding:5px 12px;
+  background:var(--glass);border:1px solid var(--b);border-radius:var(--r-pill);white-space:nowrap;
+}
+.context-bar .ctx-proj b{color:var(--ts);font-weight:700;}
+.context-bar #ctxLoadBtn{margin-left:auto;}
+@media (max-width:640px){ .context-bar #ctxLoadBtn{margin-left:0;} }
 .topbar-brand{
   display:flex;align-items:center;gap:10px;
 }
@@ -960,7 +979,8 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
 <div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">Loading…</div></div>
 <div class="toast" id="toast"></div>
 
-<!-- TOP BAR -->
+<!-- TOP BAR + PERSISTENT SPRINT & AREA CONTROL -->
+<div class="app-header">
 <div class="topbar">
   <div class="topbar-brand">
     <div class="topbar-icon">🐞</div>
@@ -968,10 +988,28 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
   </div>
   <div class="topbar-right">
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
-    <span id="connInfo" style="font-size:.65rem;color:var(--tm);display:none;padding:4px 10px;background:var(--glass);border:1px solid var(--b);border-radius:var(--r-pill);"></span>
     <button class="btn btn-ghost btn-sm" id="reConnBtn" onclick="showConnPanel()" style="display:none;">🔌 Reconnect</button>
     <div id="connBadge" class="badge b-info">◌ Not connected</div>
   </div>
+</div>
+<!-- Sprint & Area master selection — pinned under the title bar -->
+<div class="context-bar" id="contextBar" style="display:none;">
+  <span class="ctx-proj">Project: <b id="ctxProj"></b></span>
+  <button class="recon-btn" onclick="showConnPanel()">🔌 Change Project</button>
+  <div class="field">
+    <label>Sprint / Iteration <span style="color:#34d399;font-weight:400;text-transform:none;letter-spacing:0;">(latest pre-selected)</span></label>
+    <select id="iterSelect" onchange="selectIter(this.value)">
+      <option value="">-- Select sprint --</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Area Path <span style="color:#f87171;font-weight:500;text-transform:none;letter-spacing:0;">*required</span></label>
+    <select id="areaSel" onchange="onAreaChange(this.value)" class="inline-sel">
+      <option value="">— select an area —</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" id="ctxLoadBtn" onclick="loadBugs()">🐞 Load Resolved Bugs</button>
+</div>
 </div>
 
 <div class="main">
@@ -1011,7 +1049,9 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
 <!-- ══ TAB BAR (visible after connect) ══ -->
 <div id="tabBar" style="display:none;">
   <div class="tab-bar">
-    <button class="tab-btn" onclick="location.href='index.html'">📝 Task Management</button>
+    <button class="tab-btn" onclick="location.href='index.html#tab1'">📝 Create Tasks</button>
+    <button class="tab-btn" onclick="location.href='index.html#tab2'">📋 Task List</button>
+    <button class="tab-btn" onclick="location.href='index.html#tab4'">🏃 Sprint Tracker</button>
     <button class="tab-btn active" id="tabBtnBug">🐞 Bug Management</button>
   </div>
 </div>
@@ -1019,32 +1059,7 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
 <!-- ══ BUG RETESTING ══ -->
 <div class="tab-content active" id="tabContentBug">
 
-  <!-- SPRINT SELECTION -->
-  <div class="panel" id="sprintPanel" style="display:none;">
-    <div class="panel-title">
-      Sprint &amp; Area
-      <button class="recon-btn" onclick="showConnPanel()">🔌 Change Project</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end;max-width:700px;">
-      <div class="field">
-        <label>Sprint / Iteration <span style="color:#34d399;font-weight:400;text-transform:none;letter-spacing:0;">(latest quarter pre-selected)</span></label>
-        <select id="iterSelect" onchange="selectIter(this.value)">
-          <option value="">-- Select sprint --</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Area Path <span style="color:#f87171;font-weight:500;text-transform:none;letter-spacing:0;">*required</span></label>
-        <select id="areaSel" onchange="onAreaChange(this.value)" class="inline-sel">
-          <option value="">— select an area —</option>
-        </select>
-      </div>
-    </div>
-    <div style="margin-top:14px;">
-      <button class="btn btn-primary" onclick="loadBugs()">🐞 Load Resolved Bugs</button>
-    </div>
-  </div>
-
-  <!-- BUG GRID -->
+  <!-- BUG GRID (Sprint & Area live in the persistent top bar) -->
   <div id="bugScreen" style="display:none;">
     <div class="panel" style="padding:14px 18px;">
       <div class="sect-hdr">
@@ -1052,7 +1067,6 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
           <span class="sect-title">🐞 Resolved Bugs</span>
           <span id="bugCountBadge"></span>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="backToSprint()">← Back to Sprint</button>
       </div>
       <div class="tbl-toolbar">
         <div class="si-wrap" style="max-width:240px;">
@@ -1286,14 +1300,12 @@ async function connectProject(){
         buildIterSelect();
         applySharedSprintArea();
 
+        // Reveal the persistent Sprint & Area header + tabs; bugs load on demand.
         document.getElementById('connPanel').style.display='none';
-        document.getElementById('sprintPanel').style.display='block';
+        document.getElementById('contextBar').style.display='flex';
+        document.getElementById('ctxProj').textContent=currentProject;
         document.getElementById('tabBar').style.display='block';
-        document.getElementById('reConnBtn').style.display='inline-flex';
-        document.getElementById('connInfo').textContent='Project: '+currentProject;
-        document.getElementById('connInfo').style.display='inline';
         setBadge('✅ '+currentProject,'b-ok');
-        document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
         showToast('✅ Connected to "'+currentProject+'"');
     }catch(e){showToast('❌ '+e.message,'err');}
     finally{hideLoading();}
@@ -1301,16 +1313,10 @@ async function connectProject(){
 
 function showConnPanel(){
     document.getElementById('connPanel').style.display='block';
-    document.getElementById('sprintPanel').style.display='none';
+    document.getElementById('contextBar').style.display='none';
     document.getElementById('bugScreen').style.display='none';
     document.getElementById('tabBar').style.display='none';
     document.getElementById('reConnBtn').style.display='none';
-    document.getElementById('connInfo').style.display='none';
-}
-function backToSprint(){
-    document.getElementById('sprintPanel').style.display='block';
-    document.getElementById('bugScreen').style.display='none';
-    document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 /* Iteration dropdown — shows only the 12 most recent iterations (newest first),
@@ -1393,7 +1399,6 @@ async function loadBugs(opts){
         const ids=((await wr.json()).workItems||[]).map(w=>w.id);
         if(!ids.length){
             bugs=[];filteredBugs=[];bugData={};bugMap={};existingRetest={};
-            document.getElementById('sprintPanel').style.display='none';
             document.getElementById('bugScreen').style.display='block';
             renderBugGrid();showToast('ℹ️ No resolved bugs found','warn');return;
         }
@@ -1425,7 +1430,6 @@ async function loadBugs(opts){
         });
         bugData={};bugMap={};
         bugs.forEach(b=>{bugData[b.id]={sel:false,tester:b.createdByValue||'',completed:0};bugMap[b.id]=b;});
-        document.getElementById('sprintPanel').style.display='none';
         document.getElementById('bugScreen').style.display='block';
         document.getElementById('bugCountBadge').textContent='— '+bugs.length+' resolved bug'+(bugs.length!==1?'s':'')+' loaded';
 
