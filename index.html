@@ -7,37 +7,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ══════════════════════════════════════════
-   DESIGN SYSTEM — COMMAND CENTER
-══════════════════════════════════════════ */
+/* DESIGN SYSTEM — COMMAND CENTER */
 :root {
-  --bg:       #04091c;
-  --bg2:      #080f28;
-  --bg3:      #04091c;
-  --surface:  rgba(12,24,58,0.72);
-  --glass:    rgba(255,255,255,0.04);
-  --glass2:   rgba(255,255,255,0.025);
-  --inp:      rgba(4,9,28,0.8);
-  --inp2:     rgba(8,15,40,0.6);
-  --b:        rgba(56,189,248,0.12);
-  --bs:       rgba(56,189,248,0.22);
+  --bg:       #0e1630;
+  --bg2:      #141f3f;
+  --bg3:      #0b1228;
+  --surface:  rgba(22,36,74,0.72);
+  --glass:    rgba(255,255,255,0.05);
+  --glass2:   rgba(255,255,255,0.03);
+  --inp:      rgba(14,22,48,0.8);
+  --inp2:     rgba(20,31,63,0.6);
+  --b:        rgba(56,189,248,0.14);
+  --bs:       rgba(56,189,248,0.24);
   --bfocus:   rgba(56,189,248,0.55);
   --t:        #e2eeff;
   --ts:       #c8d8f4;
-  --tm:       #6b82a8;
-  --td:       #3d5070;
+  --tm:       #8296ba;
+  --td:       #5a7298;
   --acc:      #38bdf8;
   --acc2:     #818cf8;
   --acc-glow: rgba(56,189,248,0.18);
-  --th-bg:    rgba(4,9,28,0.9);
-  --th-txt:   #4a6280;
+  --th-bg:    rgba(14,22,48,0.9);
+  --th-txt:   #7089ad;
   --row-even: rgba(255,255,255,0.018);
   --row-hover:rgba(56,189,248,0.055);
   --cell-on:  rgba(56,189,248,0.14);
   --cell-border:rgba(56,189,248,0.45);
-  --sh:       rgba(0,0,0,0.6);
+  --sh:       rgba(0,0,0,0.45);
   --sh-accent:0 4px 28px rgba(56,189,248,0.12);
-  --topbar:   rgba(4,9,28,0.97);
+  --topbar:   rgba(14,22,48,0.97);
   --r-sm: 6px;
   --r:    10px;
   --r-lg: 14px;
@@ -52,13 +50,13 @@ body.light {
   --glass2:   rgba(248,250,255,0.85);
   --inp:      #ffffff;
   --inp2:     #f4f7ff;
-  --b:        #d0ddf0;
-  --bs:       #adc0e0;
+  --b:        #d7e2f2;
+  --bs:       #b8c9e4;
   --bfocus:   #0284c7;
-  --t:        #0d1a30;
-  --ts:       #1a2e4a;
-  --tm:       #3d5578;
-  --td:       #7e99be;
+  --t:        #1c2c45;
+  --ts:       #28405f;
+  --tm:       #51688c;
+  --td:       #8fa6c6;
   --acc:      #0284c7;
   --acc2:     #6366f1;
   --acc-glow: rgba(2,132,199,0.10);
@@ -470,9 +468,7 @@ body.light .fp-multiselect-item.select-all{border-color:#dde7f4;color:#0284c7;}
 /* ── SCREENS ── */
 #reqScreen{display:none;}
 
-/* ══════════════════════════════════════════
-   EXCEL TABLE
-══════════════════════════════════════════ */
+/* EXCEL TABLE */
 .excel-wrap{
   overflow-x:auto;border-radius:var(--r);
   border:1px solid var(--b);
@@ -633,7 +629,7 @@ body.light .tc.tc-exists{background:rgba(5,150,105,.07) !important;}
 /* ── LOADING OVERLAY ── */
 .loading-overlay{
   display:none;position:fixed;inset:0;
-  background:rgba(4,9,28,.9);z-index:999;
+  background:rgba(14,22,48,.9);z-index:999;
   align-items:center;justify-content:center;flex-direction:column;gap:16px;
   backdrop-filter:blur(6px);
 }
@@ -1374,9 +1370,7 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
 </div>
 
 <script>
-/* ═══════════════════════════
-   TASK TYPES
-═══════════════════════════ */
+/* TASK TYPES */
 /* QA-only standard tasks (mirrors .claude/config/qa-planning-config.json) */
 const TASK_TYPES=[
     {name:'TC Generation',         disc:'Test', execType:'AI-Test-Test Case Generation'},
@@ -1391,7 +1385,7 @@ const TASK_TYPES=[
     //   perMember:true  → one task auto-created per Test member
     {name:'PT Regression',         disc:'Test', regression:true, testerPick:true},
     {name:'CA Regression',         disc:'Test', regression:true},
-    {name:'Performance Testing - ',disc:'Test', regression:true, testerPick:true},
+    {name:'Performance Testing',   disc:'Test', regression:true, testerPick:true},
     {name:'Production Testing',     disc:'Test', regression:true},
     {name:'Azure Testing',          disc:'Test', regression:true},
     // ALM group — only applies to requirements tagged "ALM". One task per Test
@@ -1429,26 +1423,16 @@ function ttTags(t){
     if(t&&t.alm) return 'Product; ALM';
     return t&&t.regression ? 'Product; Regression' : 'Product';
 }
-/* Build the default task title, avoiding a double "-" when the type name
-   already ends with a hyphen (e.g. "Performance Testing - "). */
-function ttDefaultTitle(ttName,reqTitle){
-    const base=String(ttName||'').trim();
-    const sep=base.endsWith('-') ? ' ' : ' - ';
-    return base+sep+reqTitle;
+/* Join a task-type name to a suffix with " - " (collapses a trailing hyphen). */
+function ttJoin(name,suffix){
+    const base=String(name||'').trim();
+    return base+(base.endsWith('-')?' ':' - ')+suffix;
 }
-/* Title for a pending task object.
-   • Regression-group tasks (PT Regression / CA Regression / Performance Testing /
-     Production Testing / Azure Testing) are titled by the assigned person,
-     e.g. "PT Regression - Smit Malik".
-   • All other tasks keep the "{Type} - {Requirement title}" convention. */
+function ttDefaultTitle(ttName,reqTitle){ return ttJoin(ttName,reqTitle); }
+/* Regression/ALM tasks are titled by assignee; all others by requirement title. */
 function ttTitleForTask(t){
-    const base=String(t.ttName||'').trim();
-    const sep=base.endsWith('-') ? ' ' : ' - ';
-    if(t.regression||t.alm){
-        const who=assignedDisplayName(t.assignedTo);
-        return base+sep+(who||'Unassigned');
-    }
-    return base+sep+String(t.reqTitle||'').trim();
+    if(t.regression||t.alm) return ttJoin(t.ttName,assignedDisplayName(t.assignedTo)||'Unassigned');
+    return ttJoin(t.ttName,String(t.reqTitle||'').trim());
 }
 
 /* ── ASSIGNEE IDENTITY HELPERS ──
@@ -1479,14 +1463,16 @@ function memberOptionsHtml(selectedVal){
 }
 const DISC_CLS={'Development':'d-dev','Test':'d-test','User Experience':'d-ux','Analysis':'d-ana'};
 
-/* ═══════════════════════════
-   STATE
-═══════════════════════════ */
+/* STATE */
 let tfsUrl='', hdrs=null, currentProject='', selectedIter='';
 let allIterations=[], allAreas=[], memberList=[];
 let requirements=[], filteredReqs=[];
-// reqData[reqId] = { sel: Set<ttIdx>, at:{ttIdx:str}, oe:{}, rw:{}, cw:{} }
+// reqData[reqId] = { sel:Set<ttIdx>, at:{ttIdx:str}, oe:{}, rw:{}, cw:{}, testers:{} }
 let reqData={};
+/* A fresh per-requirement selection record. */
+function newReqData(){return{sel:new Set(),at:{},oe:{},rw:{},cw:{},testers:{}};}
+/* Return reqData[id], creating it on first touch. */
+function ensureReqData(id){return reqData[id]||(reqData[id]=newReqData());}
 let reqMap={};              // reqId -> requirement object (for quick lookups)
 let existingTaskTypes={};   // reqId -> Set(ttIdx) of task types already created (open) this sprint
 let existingTaskTesters={};  // reqId -> { ttIdx: Set(identityKey) } — which testers already have an open task (per-tester types)
@@ -1642,9 +1628,7 @@ function isCellSelectable(r,i){
     return true;
 }
 
-/* ═══════════════════════════
-   THEME
-═══════════════════════════ */
+/* THEME */
 let isDark=true;
 function toggleTheme(){
     isDark=!isDark;
@@ -1653,9 +1637,7 @@ function toggleTheme(){
     localStorage.setItem('tc_theme',isDark?'dark':'light');
 }
 
-/* ═══════════════════════════
-   INIT
-═══════════════════════════ */
+/* INIT */
 window.addEventListener('DOMContentLoaded',()=>{
     // restore theme
     const t=localStorage.getItem('tc_theme');
@@ -1668,9 +1650,7 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(su&&sp) onPatBlur();
 });
 
-/* ═══════════════════════════
-   AUTH
-═══════════════════════════ */
+/* AUTH */
 function togglePat(){
     const i=document.getElementById('pat');
     i.type=i.type==='password'?'text':'password';
@@ -1707,9 +1687,7 @@ function renderProjectDropdown(projects){
     document.getElementById('connectBtn').disabled=false;
 }
 
-/* ═══════════════════════════
-   CONNECT PROJECT
-═══════════════════════════ */
+/* CONNECT PROJECT */
 async function connectProject(){
     const sel=document.getElementById('projectSel');
     currentProject=sel?sel.value:'';
@@ -1739,11 +1717,11 @@ async function connectProject(){
         if(tl2a) tl2a.innerHTML='<option value="">All Areas</option>'+
             allAreas.map(a=>`<option value="${escAttr(a.path)}">${escHtml(a.name)}</option>`).join('');
 
-        // Iteration dropdown (grouped, latest quarter first)
+        // Iteration dropdown (grouped, latest quarter first); then override with the
+        // team's CURRENT iteration when available, then any shared header selection.
         buildIterSelect();
-        // Override the default selection with the team's CURRENT iteration
-        // (as configured globally in Azure DevOps), when one is available.
         await applyDefaultCurrentIteration();
+        applySharedSprintArea();
 
         // Mirror iterations to Tab 2's own iteration select — same grouped options and default as iterSelect (Tab 1)
         const tl2i=document.getElementById('tl2IterSel');
@@ -1820,6 +1798,18 @@ function buildIterSelect(){
     });
     if(!selectedIter&&recent[0]){selectedIter=recent[0].path;sel.value=recent[0].path;}
 }
+/* Sprint dropdown change — update state and persist for the shared Sprint & Area
+   header so Bug Management can pre-select the same iteration. */
+function selectIter(path){selectedIter=path;localStorage.setItem('tc_iter',path||'');}
+/* Shared Sprint & Area header: pre-select the iteration/area last chosen on either
+   page (stored in localStorage), when matching options exist. Pre-select only —
+   the user still clicks Load. */
+function applySharedSprintArea(){
+    const pick=(el,val)=>{ if(el&&val&&[...el.options].some(o=>o.value===val)){ el.value=val; return true; } return false; };
+    const iter=localStorage.getItem('tc_iter');
+    if(pick(document.getElementById('iterSelect'),iter)) selectedIter=iter;
+    pick(document.getElementById('areaSel'),localStorage.getItem('tc_area'));
+}
 
 /* Pre-select the team's CURRENT iteration (as set globally in Azure DevOps) in the
    Sprint dropdown, overriding the latest-quarter fallback from buildIterSelect().
@@ -1842,9 +1832,7 @@ async function applyDefaultCurrentIteration(){
     }catch(e){ console.warn('[TC] applyDefaultCurrentIteration:',e.message); }
 }
 
-/* ═══════════════════════════
-   LOAD REQUIREMENTS
-═══════════════════════════ */
+/* LOAD REQUIREMENTS */
 async function loadRequirements(opts){
     opts=opts||{};
     if(!selectedIter){showToast('❌ Select a sprint first','err');return;}
@@ -1896,7 +1884,7 @@ async function loadRequirements(opts){
         const _skipped=_beforeSkip-requirements.length;
         if(_skipped) console.log('[TC] Skipped '+_skipped+' Engineering operations & Support item(s)');
         reqData={};reqMap={};
-        requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};reqMap[r.id]=r;});
+        requirements.forEach(r=>{reqData[r.id]=newReqData();reqMap[r.id]=r;});
         document.getElementById('sprintPanel').style.display='none';
         document.getElementById('reqScreen').style.display='block';
         document.getElementById('reqCountBadge').textContent='— '+requirements.length+' requirement'+(requirements.length!==1?'s':'')+' loaded';
@@ -1919,13 +1907,11 @@ async function loadRequirements(opts){
     finally{hideLoading();}
 }
 
-/* ═══════════════════════════
-   EXISTING TASKS (for cell disabling)
+/* EXISTING TASKS (for cell disabling)
    Finds open Tasks (not Closed/Done/Removed) under the selected sprint that are
    parented to one of the loaded requirements, then maps each back to its
    requirement + task-type (via title prefix). Populates existingTaskTypes so the
-   matching cells render disabled and can't be re-created.
-═══════════════════════════ */
+   matching cells render disabled and can't be re-created. */
 async function loadExistingTasks(iterPath, area, reqIds){
     existingTaskTypes={};
     existingTaskTesters={};
@@ -1978,9 +1964,16 @@ async function loadExistingTasks(iterPath, area, reqIds){
     }catch(e){ console.warn('[TC] loadExistingTasks error:',e.message); }
 }
 
-/* ═══════════════════════════
-   RENDER EXCEL TABLE
-═══════════════════════════ */
+/* Progress badge for multi-member cells: how many of all QA members already have
+   this task (generated / total). Green when complete, accent while some remain. */
+function memberCountBadge(done,total){
+    const remaining=total-done;
+    const color=remaining>0?'var(--acc)':'#34d399';
+    const tip=remaining>0?`${done} of ${total} member(s) already have this task — ${remaining} remaining`:`All ${total} member(s) have this task`;
+    return `<span class="tc-member-badge" title="${tip}" style="font-size:.52rem;color:${color};font-weight:700;white-space:nowrap;margin-top:1px;">✓ ${done}/${total} members</span>`;
+}
+
+/* RENDER EXCEL TABLE */
 function renderExcel(){
     const thead=document.getElementById('excelHead');
     const tbody=document.getElementById('excelBody');
@@ -2051,17 +2044,16 @@ function renderExcel(){
             const estInp=`<input class="mini-inp" type="number" id="oe_${r.id}_${i}" placeholder="Est h${perEa}" min="0" step="0.5"
                         title="Original Estimate${perEa?' per tester':''} (hours)"
                         onclick="event.stopPropagation()" onchange="setCellOe(${r.id},${i},this.value)">`;
+            // Multi-member cells always show a generated/total badge (visible without
+            // ticking the checkbox) so progress toward "all members" is clear.
             const doneCount=perTester?doneTesterCount(r.id,i):0;
-            const donePill=doneCount?`<span class="tc-done-badge" title="${doneCount} tester(s) already have an open task — only the remaining ones will be created" style="font-size:.5rem;color:var(--acc);font-weight:700;white-space:nowrap;margin-top:1px;">✓ ${doneCount} done</span>`:'';
+            const memberBadge=perTester?memberCountBadge(doneCount,nTesters):'';
             let fieldsHtml;
             if(tt.testerPick){
                 fieldsHtml=estInp+
-                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`+donePill;
+                   `<button type="button" class="tc-testers-btn" id="tb_${r.id}_${i}" onclick="openTesterPop(${r.id},${i},event)" title="Choose testers (default: all)">👥 <span id="tbn_${r.id}_${i}">${cellTesterCount(r.id,i)}/${nTesters}</span></button>`;
             }else if(tt.perMember){
-                const newCount=(missCount!=null)?missCount:nTesters;
-                fieldsHtml=estInp+
-                   `<div class="tc-permember" style="font-size:.52rem;color:${newCount?'var(--acc)':'#f87171'};font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;"
-                        title="One task will be created per Test-discipline member from sprint capacity${doneCount?(' — '+doneCount+' already have a task'):''}">${newCount?('× '+newCount+(doneCount?' new':' tester'+(newCount!==1?'s':''))):'all done'}</div>`+donePill;
+                fieldsHtml=estInp;
             }else{
                 fieldsHtml=`<div class="mini-sel-wrap">
                         <select class="mini-sel" id="at_${r.id}_${i}" onclick="event.stopPropagation()" onchange="setCellAt(${r.id},${i},this.value)" title="Assigned To">${memberOpts}</select>
@@ -2071,6 +2063,7 @@ function renderExcel(){
             <div class="tc-inner">
                 <input type="checkbox" class="tc-cb" id="cb_${r.id}_${i}"
                     onclick="event.stopPropagation()" onchange="onCellChange(${r.id},${i})">
+                ${memberBadge}
                 <div class="tc-fields" id="tcf_${r.id}_${i}">
                     ${fieldsHtml}
                 </div>
@@ -2091,9 +2084,7 @@ function renderExcel(){
     updateSummary();
 }
 
-/* ═══════════════════════════
-   CELL INTERACTIONS
-═══════════════════════════ */
+/* CELL INTERACTIONS */
 function toggleCell(reqId,i,event){
     const cb=document.getElementById('cb_'+reqId+'_'+i);
     if(!cb) return;   // blank / disabled (exists) cells have no checkbox
@@ -2103,7 +2094,7 @@ function toggleCell(reqId,i,event){
 function onCellChange(reqId,i){
     const cb=document.getElementById('cb_'+reqId+'_'+i);
     const cell=document.getElementById('tc_'+reqId+'_'+i);
-    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+    ensureReqData(reqId);
     cb.checked?reqData[reqId].sel.add(i):reqData[reqId].sel.delete(i);
     cell.classList.toggle('on',cb.checked);
     updateSummary();
@@ -2111,11 +2102,11 @@ function onCellChange(reqId,i){
 /* Persist per-cell assignee / estimate into reqData so selections survive page
    changes (off-page cells have no DOM inputs). */
 function setCellAt(reqId,i,val){
-    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+    ensureReqData(reqId);
     reqData[reqId].at[i]=val;
 }
 function setCellOe(reqId,i,val){
-    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+    ensureReqData(reqId);
     reqData[reqId].oe[i]=val;
     updateSummary();
 }
@@ -2124,8 +2115,7 @@ function setCellOe(reqId,i,val){
    The chosen testers for a testerPick cell live on reqData[reqId].testers[i]
    (a Set of member "value" strings). Defaults to ALL current members. */
 function getCellTesters(reqId,i){
-    if(!reqData[reqId]) reqData[reqId]={sel:new Set(),at:{},oe:{},rw:{},cw:{},testers:{}};
-    if(!reqData[reqId].testers) reqData[reqId].testers={};
+    ensureReqData(reqId);
     if(!(i in reqData[reqId].testers)) reqData[reqId].testers[i]=new Set(memberList.map(m=>m.value));
     return reqData[reqId].testers[i];
 }
@@ -2202,7 +2192,7 @@ document.addEventListener('click',function(e){
     closeTesterPop();
 });
 function syncRow(reqId){
-    const rd=reqData[reqId]||{sel:new Set(),at:{},oe:{}};
+    const rd=reqData[reqId]||newReqData();
     const sel=rd.sel;
     TASK_TYPES.forEach((_,i)=>{
         const cb=document.getElementById('cb_'+reqId+'_'+i);
@@ -2220,7 +2210,7 @@ function syncRow(reqId){
 }
 function globalAll(state){
     filteredReqs.forEach(r=>{
-        if(!reqData[r.id]) reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+        ensureReqData(r.id);
         TASK_TYPES.forEach((_,i)=>{
             if(state){ if(isCellSelectable(r,i)) reqData[r.id].sel.add(i); }
             else reqData[r.id].sel.delete(i);
@@ -2231,7 +2221,7 @@ function globalAll(state){
 }
 function globalTT(disc){
     filteredReqs.forEach(r=>{
-        if(!reqData[r.id]) reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};
+        ensureReqData(r.id);
         TASK_TYPES.forEach((tt,i)=>{if(tt.disc===disc&&isCellSelectable(r,i)) reqData[r.id].sel.add(i);});
         syncRow(r.id);
     });
@@ -2240,7 +2230,7 @@ function globalTT(disc){
 function updateSummary(){
     let reqCount=0,taskCount=0;
     filteredReqs.forEach(r=>{
-        const sel=(reqData[r.id]||{sel:new Set()}).sel;
+        const sel=(reqData[r.id]||newReqData()).sel;
         if(sel.size>0) reqCount++;
         sel.forEach(i=>{
             const tt=TASK_TYPES[i]; if(!tt) return;
@@ -2255,9 +2245,7 @@ function updateSummary(){
     document.getElementById('smTasks').textContent=taskCount;
 }
 
-/* ═══════════════════════════
-   PAGINATION (shared)
-═══════════════════════════ */
+/* PAGINATION (shared) */
 /* Build pagination controls. `prefix` maps to {prefix}GoPage / {prefix}SetPageSize. */
 function pagerHtml(prefix,total,page,pageSize){
     const totalPages=Math.max(1,Math.ceil(total/pageSize));
@@ -2286,18 +2274,14 @@ function renderReqPager(){
 function reqGoPage(p){reqPage=p;renderExcel();const w=document.querySelector('.excel-wrap');if(w)w.scrollTop=0;}
 function reqSetPageSize(v){reqPageSize=parseInt(v)||20;reqPage=1;renderExcel();}
 
-/* ═══════════════════════════
-   AREA MEMBERS
-═══════════════════════════ */
-/* ═══════════════════════════════════════════
-   LOAD MEMBERS FROM SPRINT CAPACITY PAGE
+/* AREA MEMBERS */
+/* LOAD MEMBERS FROM SPRINT CAPACITY PAGE
    Mirrors the exact approach in index.html:
    1. Get all teams for project
    2. Match area last-segment → team name
    3. Fetch team iterations → find iteration ID by name/path
    4. GET /{project}/{team}/_apis/work/teamsettings/iterations/{id}/capacities
-   5. Extract teamMember.displayName
-═══════════════════════════════════════════ */
+   5. Extract teamMember.displayName */
 async function loadMembersFromCapacity(iterPath, areaPath){
     if(!iterPath||!currentProject) return;
     try{
@@ -2397,14 +2381,13 @@ async function loadMembersFromCapacity(iterPath, areaPath){
 }
 
 function onAreaChange(areaPath){
-    // Changing the area invalidates any loaded requirements + cached testers;
-    // members are re-fetched (once) on the next Load Requirements.
+    // Changing the area invalidates loaded requirements + cached testers (members
+    // are re-fetched on the next Load). Persist it for the shared Sprint & Area header.
+    localStorage.setItem('tc_area',areaPath||'');
     resetLoadedReqs();
 }
 
-/* ═══════════════════════════
-   GENERATE — PREVIEW FIRST
-═══════════════════════════ */
+/* GENERATE — PREVIEW FIRST */
 let _pendingTasks=[];
 
 /* Mark a preview title as manually edited so it stops auto-following the assignee. */
@@ -2452,14 +2435,14 @@ function buildTasksForCell(reqId, i, tt, base, rawAt){
 }
 
 function generateAllTasks(){
-    const toProcess=filteredReqs.filter(r=>(reqData[r.id]||{sel:new Set()}).sel.size>0);
+    const toProcess=filteredReqs.filter(r=>(reqData[r.id]||newReqData()).sel.size>0);
     if(!toProcess.length){showToast('❌ No tasks selected','err');return;}
 
     // Collect preview data. Values come from reqData (persisted across pages),
     // falling back to the DOM inputs for the currently-rendered page.
     _pendingTasks=[];
     for(const req of toProcess){
-        const selIdx=[...(reqData[req.id]||{sel:new Set()}).sel];
+        const selIdx=[...(reqData[req.id]||newReqData()).sel];
         const rd=reqData[req.id]||{at:{},oe:{}};
         for(const i of selIdx){
             if(!isCellSelectable(req,i)) continue;   // guard: skip gated / already-existing types
@@ -2628,7 +2611,7 @@ async function confirmGenerate(){
     if(totalOk>0){ loadRequirements({silent:true}); }
     else{
         reqData={};
-        requirements.forEach(r=>{reqData[r.id]={sel:new Set(),at:{},oe:{},rw:{},cw:{}};reqMap[r.id]=r;});
+        requirements.forEach(r=>{reqData[r.id]=newReqData();reqMap[r.id]=r;});
         applyReqFilters();
     }
 }
@@ -2657,9 +2640,7 @@ function updateGenLoader(done,total,label){
 }
 function hideGenLoader(){const l=document.getElementById('genLoader');if(l)l.classList.remove('vis');}
 
-/* ═══════════════════════════
-   FILTER
-═══════════════════════════ */
+/* FILTER */
 /* Apply the search box + deliverable-type multiselect to `requirements`,
    then re-render. Deliverable matching is EXACT (whole-tag), case-insensitive. */
 function applyReqFilters(){
@@ -2740,12 +2721,8 @@ function reloadForDeliv(){
     loadRequirements({silent:true});
 }
 
-/* ═══════════════════════════
-   UTILS
-═══════════════════════════ */
-/* ═══════════════════════════
-   TABS
-═══════════════════════════ */
+/* UTILS */
+/* TABS */
 function switchTab(n){
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
@@ -2800,9 +2777,7 @@ function getSelectedAreas(){
     return cbs.length?[...cbs].filter(cb=>cb.checked).map(cb=>cb.value):null;
 }
 
-/* ═══════════════════════════
-   TASK LIST (Tab 2)
-═══════════════════════════ */
+/* TASK LIST (Tab 2) */
 let allTasks=[], filteredTasks=[];
 // parentMap: taskId → {reqId, reqTitle, reqUrl, featId, featTitle, featUrl}
 let taskParentInfo={};
@@ -3080,11 +3055,9 @@ function filterTaskList(){
     renderTaskList();
 }
 
-/* ══════════════════════════════════════════════════════
-   SPRINT TRACKER (Tab 4)
+/* SPRINT TRACKER (Tab 4)
    Uses existing tfsUrl + hdrs from task-creator auth
-   Self-contained with st* prefix to avoid collisions
-══════════════════════════════════════════════════════ */
+   Self-contained with st* prefix to avoid collisions */
 
 // Sprint Tracker state
 var stData=null, stCapData={}, stTeamDaysOff=[], stAllItemsMap={}, stCurSub='summary';

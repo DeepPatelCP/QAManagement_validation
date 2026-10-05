@@ -7,37 +7,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ══════════════════════════════════════════
-   DESIGN SYSTEM — COMMAND CENTER
-══════════════════════════════════════════ */
+/* DESIGN SYSTEM — COMMAND CENTER */
 :root {
-  --bg:       #04091c;
-  --bg2:      #080f28;
-  --bg3:      #04091c;
-  --surface:  rgba(12,24,58,0.72);
-  --glass:    rgba(255,255,255,0.04);
-  --glass2:   rgba(255,255,255,0.025);
-  --inp:      rgba(4,9,28,0.8);
-  --inp2:     rgba(8,15,40,0.6);
-  --b:        rgba(56,189,248,0.12);
-  --bs:       rgba(56,189,248,0.22);
+  --bg:       #0e1630;
+  --bg2:      #141f3f;
+  --bg3:      #0b1228;
+  --surface:  rgba(22,36,74,0.72);
+  --glass:    rgba(255,255,255,0.05);
+  --glass2:   rgba(255,255,255,0.03);
+  --inp:      rgba(14,22,48,0.8);
+  --inp2:     rgba(20,31,63,0.6);
+  --b:        rgba(56,189,248,0.14);
+  --bs:       rgba(56,189,248,0.24);
   --bfocus:   rgba(56,189,248,0.55);
   --t:        #e2eeff;
   --ts:       #c8d8f4;
-  --tm:       #6b82a8;
-  --td:       #3d5070;
+  --tm:       #8296ba;
+  --td:       #5a7298;
   --acc:      #38bdf8;
   --acc2:     #818cf8;
   --acc-glow: rgba(56,189,248,0.18);
-  --th-bg:    rgba(4,9,28,0.9);
-  --th-txt:   #4a6280;
+  --th-bg:    rgba(14,22,48,0.9);
+  --th-txt:   #7089ad;
   --row-even: rgba(255,255,255,0.018);
   --row-hover:rgba(56,189,248,0.055);
   --cell-on:  rgba(56,189,248,0.14);
   --cell-border:rgba(56,189,248,0.45);
-  --sh:       rgba(0,0,0,0.6);
+  --sh:       rgba(0,0,0,0.45);
   --sh-accent:0 4px 28px rgba(56,189,248,0.12);
-  --topbar:   rgba(4,9,28,0.97);
+  --topbar:   rgba(14,22,48,0.97);
   --r-sm: 6px;
   --r:    10px;
   --r-lg: 14px;
@@ -52,13 +50,13 @@ body.light {
   --glass2:   rgba(248,250,255,0.85);
   --inp:      #ffffff;
   --inp2:     #f4f7ff;
-  --b:        #d0ddf0;
-  --bs:       #adc0e0;
+  --b:        #d7e2f2;
+  --bs:       #b8c9e4;
   --bfocus:   #0284c7;
-  --t:        #0d1a30;
-  --ts:       #1a2e4a;
-  --tm:       #3d5578;
-  --td:       #7e99be;
+  --t:        #1c2c45;
+  --ts:       #28405f;
+  --tm:       #51688c;
+  --td:       #8fa6c6;
   --acc:      #0284c7;
   --acc2:     #6366f1;
   --acc-glow: rgba(2,132,199,0.10);
@@ -470,9 +468,7 @@ body.light .fp-multiselect-item.select-all{border-color:#dde7f4;color:#0284c7;}
 /* ── SCREENS ── */
 #reqScreen{display:none;}
 
-/* ══════════════════════════════════════════
-   EXCEL TABLE
-══════════════════════════════════════════ */
+/* EXCEL TABLE */
 .excel-wrap{
   overflow-x:auto;border-radius:var(--r);
   border:1px solid var(--b);
@@ -633,7 +629,7 @@ body.light .tc.tc-exists{background:rgba(5,150,105,.07) !important;}
 /* ── LOADING OVERLAY ── */
 .loading-overlay{
   display:none;position:fixed;inset:0;
-  background:rgba(4,9,28,.9);z-index:999;
+  background:rgba(14,22,48,.9);z-index:999;
   align-items:center;justify-content:center;flex-direction:column;gap:16px;
   backdrop-filter:blur(6px);
 }
@@ -1109,14 +1105,12 @@ body.light .dp-oth {background:rgba(100,116,139,.1);color:#475569;}
 </div>
 
 <script>
-/* ═══════════════════════════
-   BUG RETESTING — CONSTANTS
+/* BUG RETESTING — CONSTANTS
    Confirmed from the real task created under Bug 1624457 (Task 1634036):
      Title       : "Bug ReTesting : {bugId}: {bug title}"
      Discipline  : Test
      Tags        : "Bug Retesting; Bug/Maintenance"
-     Exec Type   : Manual
-═══════════════════════════ */
+     Exec Type   : Manual */
 const RETEST_DISC   = 'Test';
 const RETEST_TAGS   = 'Bug Retesting; Bug/Maintenance';
 const RETEST_EXEC   = 'Manual';
@@ -1182,9 +1176,7 @@ function testerOptionsHtml(bug,selectedVal){
     return html;
 }
 
-/* ═══════════════════════════
-   STATE
-═══════════════════════════ */
+/* STATE */
 let tfsUrl='', hdrs=null, currentProject='', selectedIter='';
 let allIterations=[], allAreas=[], memberList=[];
 let bugs=[], filteredBugs=[];
@@ -1201,9 +1193,7 @@ function wiqlEscPath(s){return String(s||'').replace(/^\\/,'').replace(/\\Iterat
 /* Repeat retests are always allowed — every loaded bug's cell stays selectable. */
 function isCellSelectable(bug){ return !!bug; }
 
-/* ═══════════════════════════
-   THEME
-═══════════════════════════ */
+/* THEME */
 let isDark=true;
 function toggleTheme(){
     isDark=!isDark;
@@ -1212,9 +1202,7 @@ function toggleTheme(){
     localStorage.setItem('tc_theme',isDark?'dark':'light');
 }
 
-/* ═══════════════════════════
-   INIT — restore creds/project and auto-connect
-═══════════════════════════ */
+/* INIT — restore creds/project and auto-connect */
 window.addEventListener('DOMContentLoaded',async()=>{
     const t=localStorage.getItem('tc_theme');
     if(t==='light'){isDark=false;document.body.classList.add('light');document.getElementById('themeBtn').textContent='☀️ Light';}
@@ -1235,9 +1223,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
     }
 });
 
-/* ═══════════════════════════
-   AUTH
-═══════════════════════════ */
+/* AUTH */
 function togglePat(){
     const i=document.getElementById('pat');
     i.type=i.type==='password'?'text':'password';
@@ -1274,9 +1260,7 @@ function renderProjectDropdown(projects){
     document.getElementById('connectBtn').disabled=false;
 }
 
-/* ═══════════════════════════
-   CONNECT PROJECT
-═══════════════════════════ */
+/* CONNECT PROJECT */
 async function connectProject(){
     const sel=document.getElementById('projectSel');
     currentProject=sel?sel.value:'';
@@ -1300,6 +1284,7 @@ async function connectProject(){
             allAreas.map(a=>`<option value="${escAttr(a.path)}">${escHtml(a.name)}</option>`).join('');
 
         buildIterSelect();
+        applySharedSprintArea();
 
         document.getElementById('connPanel').style.display='none';
         document.getElementById('sprintPanel').style.display='block';
@@ -1369,13 +1354,19 @@ function buildIterSelect(){
     });
     if(!selectedIter&&recent[0]){selectedIter=recent[0].path;sel.value=recent[0].path;}
 }
-function selectIter(path){selectedIter=path;}
-function onAreaChange(areaPath){ memberList=[]; }
+/* Persist Sprint & Area for the shared header so Task Management pre-selects them. */
+function selectIter(path){selectedIter=path;localStorage.setItem('tc_iter',path||'');}
+function onAreaChange(areaPath){ memberList=[]; localStorage.setItem('tc_area',areaPath||''); }
+/* Pre-select the iteration/area last chosen on either page (pre-select only). */
+function applySharedSprintArea(){
+    const pick=(el,val)=>{ if(el&&val&&[...el.options].some(o=>o.value===val)){ el.value=val; return true; } return false; };
+    const iter=localStorage.getItem('tc_iter');
+    if(pick(document.getElementById('iterSelect'),iter)) selectedIter=iter;
+    pick(document.getElementById('areaSel'),localStorage.getItem('tc_area'));
+}
 
-/* ═══════════════════════════
-   LOAD RESOLVED BUGS
-   Same inputs as Task Management: Iteration (required) + Area (required).
-═══════════════════════════ */
+/* LOAD RESOLVED BUGS
+   Same inputs as Task Management: Iteration (required) + Area (required). */
 async function loadBugs(opts){
     opts=opts||{};
     if(!selectedIter){showToast('❌ Select a sprint first','err');return;}
@@ -1454,12 +1445,10 @@ async function loadBugs(opts){
     finally{hideLoading();}
 }
 
-/* ═══════════════════════════
-   EXISTING RETEST TASKS (informational — not a block)
+/* EXISTING RETEST TASKS (informational — not a block)
    Finds OPEN Tasks (any iteration) whose title looks like a Bug Retesting task and
    whose parent is one of the loaded bugs, and counts them per bug. Shown as a small
-   "N existing" note; the cell stays selectable so a repeat retest can still be added.
-═══════════════════════════ */
+   "N existing" note; the cell stays selectable so a repeat retest can still be added. */
 async function loadExistingRetests(bugIds){
     existingRetest={};
     if(!currentProject||!bugIds||!bugIds.length) return;
@@ -1492,12 +1481,10 @@ async function loadExistingRetests(bugIds){
     }catch(e){ console.warn('[BugMgmt] loadExistingRetests error:',e.message); }
 }
 
-/* ═══════════════════════════
-   RESOLVE CURRENT ITERATION (team's active sprint by date)
+/* RESOLVE CURRENT ITERATION (team's active sprint by date)
    Retest tasks always land in the active sprint. We pick the area's team (same
    area→team match as capacity), then ask team settings for its current iteration
-   (?$timeframe=current). The returned .path is a valid System.IterationPath.
-═══════════════════════════ */
+   (?$timeframe=current). The returned .path is a valid System.IterationPath. */
 async function resolveCurrentIteration(areaPath){
     currentIterationPath=''; currentIterationName='';
     if(!currentProject) return;
@@ -1539,9 +1526,7 @@ function updateTargetIterHint(){
     if(el) el.textContent=currentIterationName||(currentIterationPath?currentIterationPath.split('\\').pop():'each bug’s own sprint');
 }
 
-/* ═══════════════════════════
-   CAPACITY MEMBERS (Test discipline) — mirrors Task Management
-═══════════════════════════ */
+/* CAPACITY MEMBERS (Test discipline) — mirrors Task Management */
 async function loadMembersFromCapacity(iterPath, areaPath){
     if(!iterPath||!currentProject) return;
     try{
@@ -1625,9 +1610,7 @@ async function loadMembersFromCapacity(iterPath, areaPath){
     }catch(e){ console.warn('[BugMgmt] loadMembersFromCapacity error:',e.message); }
 }
 
-/* ═══════════════════════════
-   RENDER BUG GRID (same Excel look/logic as Task Management)
-═══════════════════════════ */
+/* RENDER BUG GRID (same Excel look/logic as Task Management) */
 function sevClass(s){
     const l=String(s||'').toLowerCase();
     if(l.includes('1')||l.includes('critical')) return 'b-err';
@@ -1693,9 +1676,7 @@ function renderBugGrid(){
     updateSummary();
 }
 
-/* ═══════════════════════════
-   CELL INTERACTIONS
-═══════════════════════════ */
+/* CELL INTERACTIONS */
 function toggleCell(bugId,event){
     const cb=document.getElementById('cb_'+bugId);
     if(!cb) return;
@@ -1743,9 +1724,7 @@ function updateSummary(){
     document.getElementById('smTasks').textContent=n;
 }
 
-/* ═══════════════════════════
-   FILTER
-═══════════════════════════ */
+/* FILTER */
 function filterBugs(){
     const q=(document.getElementById('bugSearch')?.value||'').trim().toLowerCase();
     filteredBugs=bugs.filter(b=>{
@@ -1756,9 +1735,7 @@ function filterBugs(){
 }
 function refreshBugs(){ loadBugs({silent:true}); }
 
-/* ═══════════════════════════
-   GENERATE — PREVIEW FIRST
-═══════════════════════════ */
+/* GENERATE — PREVIEW FIRST */
 let _pendingTasks=[];
 function markTitleEdited(el){ if(el) el.dataset.auto='0'; }
 
@@ -1913,9 +1890,7 @@ function addLog(el,msg,type){
     el.appendChild(d);el.scrollTop=el.scrollHeight;
 }
 
-/* ═══════════════════════════
-   SHARED HELPERS (mirrors Task Management)
-═══════════════════════════ */
+/* SHARED HELPERS (mirrors Task Management) */
 function flattenNodes(node,res=[],d=0){
     if(!node) return res;
     if(d>0){
