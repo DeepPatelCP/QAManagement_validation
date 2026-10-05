@@ -101,15 +101,34 @@ body.light::before{
 }
 
 /* ── TOPBAR ── */
+/* The title bar + context bar pin together as one sticky header. */
+.app-header{position:sticky;top:0;z-index:300;}
 .topbar{
   background:var(--topbar);
   border-bottom:1px solid var(--b);
   padding:10px 24px;
   display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:300;
   backdrop-filter:blur(16px);
   box-shadow:0 1px 0 var(--b),0 4px 24px rgba(0,0,0,0.25);
 }
+/* Persistent Sprint & Area control — always visible under the title bar. */
+.context-bar{
+  background:var(--topbar);
+  border-bottom:1px solid var(--b);
+  padding:9px 24px;
+  display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+  backdrop-filter:blur(16px);
+  box-shadow:0 2px 16px rgba(0,0,0,0.18);
+}
+.context-bar .field{min-width:180px;}
+.context-bar .ctx-proj{
+  display:inline-flex;align-items:center;gap:5px;align-self:center;
+  font-size:.68rem;color:var(--tm);padding:5px 12px;
+  background:var(--glass);border:1px solid var(--b);border-radius:var(--r-pill);white-space:nowrap;
+}
+.context-bar .ctx-proj b{color:var(--ts);font-weight:700;}
+.context-bar #ctxLoadBtn{margin-left:auto;}
+@media (max-width:640px){ .context-bar #ctxLoadBtn{margin-left:0;} }
 .topbar-brand{
   display:flex;align-items:center;gap:10px;
 }
@@ -1026,7 +1045,8 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
 <div class="toast" id="toast"></div>
 <div class="tester-pop" id="testerPop"></div>
 
-<!-- TOP BAR -->
+<!-- TOP BAR + PERSISTENT SPRINT & AREA CONTROL -->
+<div class="app-header">
 <div class="topbar">
   <div class="topbar-brand">
     <div class="topbar-icon">📋</div>
@@ -1034,10 +1054,28 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
   </div>
   <div class="topbar-right">
     <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">🌙 Dark</button>
-    <span id="connInfo" style="font-size:.65rem;color:var(--tm);display:none;padding:4px 10px;background:var(--glass);border:1px solid var(--b);border-radius:var(--r-pill);"></span>
     <button class="btn btn-ghost btn-sm" id="reConnBtn" onclick="showConnPanel()" style="display:none;">🔌 Reconnect</button>
     <div id="connBadge" class="badge b-info">◌ Not connected</div>
   </div>
+</div>
+<!-- Sprint & Area master selection — pinned under the title bar, drives every tab -->
+<div class="context-bar" id="contextBar" style="display:none;">
+  <span class="ctx-proj">Project: <b id="ctxProj"></b></span>
+  <button class="recon-btn" onclick="showConnPanel()">🔌 Change Project</button>
+  <div class="field">
+    <label>Sprint / Iteration <span style="color:#34d399;font-weight:400;text-transform:none;letter-spacing:0;">(latest pre-selected)</span></label>
+    <select id="iterSelect" onchange="selectIter(this.value)">
+      <option value="">-- Select sprint --</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Area Path <span style="color:#f87171;font-weight:500;text-transform:none;letter-spacing:0;">*required</span></label>
+    <select id="areaSel" onchange="onAreaChange(this.value)" class="inline-sel">
+      <option value="">— select an area —</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" id="ctxLoadBtn" onclick="loadActiveTab()">📋 Load</button>
+</div>
 </div>
 
 <div class="main">
@@ -1087,32 +1125,7 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
 <!-- ══ TAB 1: SPRINT SELECTION + EXCEL VIEW ══ -->
 <div class="tab-content active" id="tabContent1">
 
-  <!-- STEP 2: SPRINT SELECTION -->
-  <div class="panel" id="sprintPanel" style="display:none;">
-    <div class="panel-title">
-      Sprint &amp; Area
-      <button class="recon-btn" onclick="showConnPanel()">🔌 Change Project</button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:end;max-width:700px;">
-      <div class="field">
-        <label>Sprint / Iteration <span style="color:#34d399;font-weight:400;text-transform:none;letter-spacing:0;">(latest quarter pre-selected)</span></label>
-        <select id="iterSelect" onchange="selectIter(this.value)">
-          <option value="">-- Select sprint --</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Area Path <span style="color:#f87171;font-weight:500;text-transform:none;letter-spacing:0;">*required</span></label>
-        <select id="areaSel" onchange="onAreaChange(this.value)" class="inline-sel">
-          <option value="">— select an area —</option>
-        </select>
-      </div>
-    </div>
-    <div style="margin-top:14px;">
-      <button class="btn btn-primary" onclick="loadRequirements()">📋 Load Requirements</button>
-    </div>
-  </div>
-
-  <!-- STEP 3: EXCEL VIEW -->
+  <!-- EXCEL VIEW (Sprint & Area live in the persistent top bar) -->
   <div id="reqScreen">
     <div class="panel" style="padding:14px 18px;">
       <div class="sect-hdr">
@@ -1120,7 +1133,6 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
           <span class="sect-title">📄 Requirements</span>
           <span id="reqCountBadge"></span>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="backToSprint()">← Back to Sprint</button>
       </div>
       <div class="tbl-toolbar">
         <div class="si-wrap" style="max-width:220px;">
@@ -1181,24 +1193,6 @@ body.light .gen-loader{background:#f4f7ff;border-color:#adc0e0;}
         <span class="sect-title">📋 Tasks</span>
         <span id="taskListBadge" class="sect-badge"></span>
         <span id="taskListContext" class="sect-ctx"></span>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;max-width:760px;margin-bottom:14px;">
-      <div class="field">
-        <label>Sprint / Iteration</label>
-        <select id="tl2IterSel" class="inline-sel">
-          <option value="">— Connect project first —</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Area Path</label>
-        <select id="tl2AreaSel" class="inline-sel">
-          <option value="">All Areas</option>
-        </select>
-      </div>
-      <div class="field">
-        <label style="visibility:hidden;font-size:.66rem;">.</label>
-        <button class="btn btn-primary" onclick="loadTaskList()">📋 Load Tasks</button>
       </div>
     </div>
     <div class="tbl-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;align-items:center;">
@@ -1502,7 +1496,6 @@ function resetLoadedReqs(){
     requirements=[];filteredReqs=[];reqData={};reqMap={};existingTaskTypes={};
     memberList=[];_membersKey='';reqPage=1;
     const rs=document.getElementById('reqScreen'); if(rs) rs.style.display='none';
-    const sp=document.getElementById('sprintPanel'); if(sp) sp.style.display='block';
     const banner=document.getElementById('successBanner'); if(banner) banner.classList.remove('vis');
     const log=document.getElementById('genLog'); if(log){ log.classList.remove('vis'); log.innerHTML=''; }
 }
@@ -1727,32 +1720,20 @@ async function connectProject(){
         as.innerHTML='<option value="">— select an area —</option>'+
             allAreas.map(a=>`<option value="${escAttr(a.path)}">${escHtml(a.name)}</option>`).join('');
 
-        // Mirror to Tab 2's own area select
-        const tl2a=document.getElementById('tl2AreaSel');
-        if(tl2a) tl2a.innerHTML='<option value="">All Areas</option>'+
-            allAreas.map(a=>`<option value="${escAttr(a.path)}">${escHtml(a.name)}</option>`).join('');
-
         // Iteration dropdown (grouped, latest quarter first); then override with the
         // team's CURRENT iteration when available, then any shared header selection.
         buildIterSelect();
         await applyDefaultCurrentIteration();
         applySharedSprintArea();
 
-        // Mirror iterations to Tab 2's own iteration select — same grouped options and default as iterSelect (Tab 1)
-        const tl2i=document.getElementById('tl2IterSel');
-        if(tl2i){
-            tl2i.innerHTML=document.getElementById('iterSelect').innerHTML;
-            tl2i.value=document.getElementById('iterSelect').value||selectedIter||'';
-        }
-
+        // Reveal the persistent Sprint & Area header + tabs; the grid loads on demand.
         document.getElementById('connPanel').style.display='none';
-        document.getElementById('sprintPanel').style.display='block';
+        document.getElementById('contextBar').style.display='flex';
+        document.getElementById('ctxProj').textContent=currentProject;
         document.getElementById('tabBar').style.display='block';
-        document.getElementById('reConnBtn').style.display='inline-flex';
-        document.getElementById('connInfo').textContent='Project: '+currentProject;
-        document.getElementById('connInfo').style.display='inline';
+        updateCtxLoadBtn();
+        applyPendingTabFromHash();   // honor #tab2/#tab4 when arriving from Bug Management
         setBadge('✅ '+currentProject,'b-ok');
-        document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
         showToast('✅ Connected to "'+currentProject+'"');
     }catch(e){showToast('❌ '+e.message,'err');}
     finally{hideLoading();}
@@ -1760,16 +1741,23 @@ async function connectProject(){
 
 function showConnPanel(){
     document.getElementById('connPanel').style.display='block';
-    document.getElementById('sprintPanel').style.display='none';
+    document.getElementById('contextBar').style.display='none';
     document.getElementById('reqScreen').style.display='none';
     document.getElementById('tabBar').style.display='none';
     document.getElementById('reConnBtn').style.display='none';
-    document.getElementById('connInfo').style.display='none';
 }
-function backToSprint(){
-    document.getElementById('sprintPanel').style.display='block';
-    document.getElementById('reqScreen').style.display='none';
-    document.getElementById('sprintPanel').scrollIntoView({behavior:'smooth',block:'start'});
+/* Open the tab requested via a "#tabN" hash (set by Bug Management's tab links). */
+function applyPendingTabFromHash(){
+    const m=(location.hash||'').match(/^#tab(\d+)$/);
+    if(m){ const n=parseInt(m[1],10); if(document.getElementById('tabBtn'+n)) switchTab(n); }
+}
+/* Load the data for whichever tab is active (the one top-bar Load drives). */
+function loadActiveTab(){ (_activeTab===2) ? loadTaskList() : loadRequirements(); }
+/* The top Load button only applies to Create Tasks / Task List, not Sprint Tracker. */
+function updateCtxLoadBtn(){
+    const b=document.getElementById('ctxLoadBtn'); if(!b) return;
+    b.style.display=(_activeTab===4)?'none':'inline-flex';
+    b.textContent=(_activeTab===2)?'📋 Load Tasks':'📋 Load Requirements';
 }
 
 /* Iteration dropdown — shows only the 12 most recent iterations (newest first),
@@ -1876,7 +1864,6 @@ async function loadRequirements(opts){
         const ids=((await wr.json()).workItems||[]).map(w=>w.id);
         if(!ids.length){
             requirements=[];filteredReqs=[];reqData={};reqMap={};existingTaskTypes={};
-            document.getElementById('sprintPanel').style.display='none';
             document.getElementById('reqScreen').style.display='block';
             applyReqFilters();showToast('ℹ️ No requirements found','warn');return;
         }
@@ -1900,7 +1887,6 @@ async function loadRequirements(opts){
         if(_skipped) console.log('[TC] Skipped '+_skipped+' Engineering operations & Support item(s)');
         reqData={};reqMap={};
         requirements.forEach(r=>{reqData[r.id]=newReqData();reqMap[r.id]=r;});
-        document.getElementById('sprintPanel').style.display='none';
         document.getElementById('reqScreen').style.display='block';
         document.getElementById('reqCountBadge').textContent='— '+requirements.length+' requirement'+(requirements.length!==1?'s':'')+' loaded';
 
@@ -2748,11 +2734,14 @@ function reloadForDeliv(){
 
 /* UTILS */
 /* TABS */
+let _activeTab=1;   // which tab the persistent top Load button drives
 function switchTab(n){
+    _activeTab=n;
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     document.getElementById('tabBtn'+n).classList.add('active');
     document.getElementById('tabContent'+n).classList.add('active');
+    updateCtxLoadBtn();
     if(n===4){ stInitOnTabSwitch(); }
 }
 
@@ -2809,9 +2798,9 @@ let taskParentInfo={};
 let tlPage=1, tlPageSize=20;   // Task List pagination
 
 async function loadTaskList(){
-    // Use Tab 2's own selects (populated when project connects)
-    const iterPath=document.getElementById('tl2IterSel')?.value||selectedIter;
-    const areaPath=document.getElementById('tl2AreaSel')?.value||'';
+    // Driven by the shared Sprint & Area header (same selection as Create Tasks).
+    const iterPath=selectedIter;
+    const areaPath=document.getElementById('areaSel')?.value||'';
     if(!iterPath||!currentProject){showToast('❌ Connect a project and select a sprint first','err');return;}
 
     // Hide idle placeholder; it only shows before the first explicit load
